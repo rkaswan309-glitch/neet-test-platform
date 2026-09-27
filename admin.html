@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin Panel - NEET Test Platform</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0f1720; --panel:#16212c; --panel-2:#1c2a37;
+    --accent:#3ddc84; --accent-dim:#1f8f56; --danger:#ff6b5e;
+    --text:#eef3f6; --text-dim:#9fb0bc; --border:#26343f;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;}
+  h1,h2,h3{font-family:'Space Grotesk',sans-serif;}
+  .wrap{max-width:840px;margin:0 auto;padding:30px 18px 80px;}
+  h1{font-size:1.5rem;margin:0 0 4px;}
+  .sub{color:var(--text-dim);font-size:.9rem;margin-bottom:26px;}
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:22px;margin-bottom:20px;}
+  .card h2{font-size:1.05rem;margin:0 0 16px;}
+  label{display:block;font-size:.82rem;color:var(--text-dim);margin:12px 0 5px;}
+  input[type=text], input[type=number], textarea, select{
+    width:100%;background:var(--panel-2);border:1px solid var(--border);border-radius:8px;
+    color:var(--text);padding:10px 12px;font-family:'Inter',sans-serif;font-size:.92rem;
+  }
+  textarea{min-height:60px;resize:vertical;}
+  .row{display:flex;gap:12px;flex-wrap:wrap;}
+  .row > div{flex:1;min-width:140px;}
+  .opt-row{display:flex;align-items:center;gap:10px;margin-bottom:8px;}
+  .opt-row input[type=text]{flex:1;}
+  .opt-row input[type=radio]{width:18px;height:18px;accent-color:var(--accent);}
+  button{
+    font-family:'Inter',sans-serif;font-weight:600;font-size:.9rem;
+    padding:10px 20px;border-radius:8px;border:1px solid var(--border);
+    background:var(--panel-2);color:var(--text);cursor:pointer;
+  }
+  button:hover{border-color:#3a4b58;}
+  button.primary{background:var(--accent);border-color:var(--accent);color:#06251a;}
+  button.primary:hover{background:#33c877;}
+  button.danger{background:transparent;border-color:var(--danger);color:var(--danger);}
+  .qlist{margin-top:10px;}
+  .qitem{background:var(--panel-2);border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin-bottom:8px;font-size:.85rem;display:flex;justify-content:space-between;align-items:flex-start;gap:10px;}
+  .qitem .qtext{flex:1;}
+  .qitem .qtopic{color:var(--accent);font-size:.75rem;}
+  .remark-row{display:flex;gap:8px;margin-bottom:8px;align-items:center;}
+  .remark-row input{flex:1;}
+  .imgpreview{max-width:160px;border-radius:6px;margin-top:8px;display:none;}
+  .status{font-size:.82rem;margin-top:8px;min-height:18px;}
+  .status.ok{color:var(--accent);}
+  .status.err{color:var(--danger);}
+  .count-badge{background:var(--accent);color:#06251a;border-radius:20px;padding:2px 10px;font-size:.78rem;font-weight:700;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Admin Panel</h1>
+  <div class="sub">Naya test banao — question add karo aur publish karo</div>
+
+  <!-- TEST INFO -->
+  <div class="card">
+    <h2>1. Test ki jaankari</h2>
+    <div class="row">
+      <div>
+        <label>Test Series (jaise "Weekly Test Series")</label>
+        <input type="text" id="seriesName" placeholder="e.g. Weekly Test Series">
+      </div>
+      <div>
+        <label>Test ka naam</label>
+        <input type="text" id="testTitle" placeholder="e.g. Physics Full Test 1">
+      </div>
+    </div>
+    <div class="row">
+      <div>
+        <label>Har sahi jawab ke marks</label>
+        <input type="number" id="marksCorrect" value="4">
+      </div>
+      <div>
+        <label>Negative marking (galat jawab pe)</label>
+        <input type="number" id="marksWrong" value="1">
+      </div>
+      <div>
+        <label>Timer (minutes me)</label>
+        <input type="number" id="timerMin" value="180">
+      </div>
+    </div>
+  </div>
+
+  <!-- REMARKS -->
+  <div class="card">
+    <h2>2. Marks ke hisaab se Remarks</h2>
+    <div id="remarksBox"></div>
+    <button onclick="addRemarkRow()">+ Remark add karo</button>
+  </div>
+
+  <!-- ADD QUESTION -->
+  <div class="card">
+    <h2>3. Question add karo <span class="count-badge" id="qCount">0 added</span></h2>
+    <label>Topic / Chapter</label>
+    <input type="text" id="qTopic" placeholder="e.g. Physics - Current Electricity">
+
+    <label>Question text</label>
+    <textarea id="qText" placeholder="Question yahan likho"></textarea>
+
+    <label>Diagram / Photo (optional)</label>
+    <input type="file" id="qImage" accept="image/*">
+    <img id="imgPreview" class="imgpreview">
+    <div class="status" id="uploadStatus"></div>
+
+    <label>Options (sahi jawab ke saamne wala radio button select karo)</label>
+    <div class="opt-row"><input type="radio" name="correct" value="0" checked><input type="text" id="opt0" placeholder="Option A"></div>
+    <div class="opt-row"><input type="radio" name="correct" value="1"><input type="text" id="opt1" placeholder="Option B"></div>
+    <div class="opt-row"><input type="radio" name="correct" value="2"><input type="text" id="opt2" placeholder="Option C"></div>
+    <div class="opt-row"><input type="radio" name="correct" value="3"><input type="text" id="opt3" placeholder="Option D"></div>
+
+    <label>Explanation (optional)</label>
+    <textarea id="qExplanation" placeholder="Sahi jawab kyun sahi hai"></textarea>
+
+    <div style="margin-top:14px;">
+      <button class="primary" onclick="addQuestion()">Question List me Add karo</button>
+    </div>
+    <div class="status" id="qStatus"></div>
+  </div>
+
+  <!-- QUESTION LIST -->
+  <div class="card">
+    <h2>4. Add kiye gaye Questions</h2>
+    <div class="qlist" id="qList"><div class="sub">Abhi koi question add nahi hua.</div></div>
+  </div>
+
+  <!-- PUBLISH -->
+  <div class="card">
+    <button class="primary" style="width:100%;padding:14px;font-size:1rem;" onclick="publishTest()">Test Publish Karo</button>
+    <div class="status" id="publishStatus"></div>
+  </div>
+</div>
+
+<script type="module">
+  import { db } from './firebase-config.js';
+  import { collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+  const CLOUD_NAME = "qre5hpol";
+  const UPLOAD_PRESET = "neet_question";
+
+  let questions = [];
+  let uploadedImageUrl = null;
+
+  // ---- Remarks ----
+  window.addRemarkRow = function(min="", max="", text=""){
+    const box = document.getElementById('remarksBox');
+    const row = document.createElement('div');
+    row.className = 'remark-row';
+    row.innerHTML = `
+      <input type="number" placeholder="Min score" value="${min}" class="rmin">
+      <input type="number" placeholder="Max score" value="${max}" class="rmax">
+      <input type="text" placeholder="Remark text" value="${text}" class="rtext">
+      <button class="danger" onclick="this.parentElement.remove()">X</button>
+    `;
+    box.appendChild(row);
+  }
+  addRemarkRow(600,720,"Excellent! Top government college ka strong chance.");
+  addRemarkRow(450,599,"Good score, thoda aur practice karo.");
+  addRemarkRow(0,449,"Weak areas par zyada focus karo.");
+
+  // ---- Image upload ----
+  document.getElementById('qImage').addEventListener('change', async (e)=>{
+    const file = e.target.files[0];
+    if(!file) return;
+    const statusEl = document.getElementById('uploadStatus');
+    statusEl.textContent = "Uploading...";
+    statusEl.className = "status";
+    const preview = document.getElementById('imgPreview');
+    preview.style.display = 'none';
+    uploadedImageUrl = null;
+
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('upload_preset', UPLOAD_PRESET);
+
+    try {
+      const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`, {
+        method: 'POST', body: formData
+      });
+      const data = await res.json();
+      if(data.secure_url){
+        uploadedImageUrl = data.secure_url;
+        preview.src = uploadedImageUrl;
+        preview.style.display = 'block';
+        statusEl.textContent = "Photo upload ho gayi!";
+        statusEl.className = "status ok";
+      } else {
+        throw new Error(data.error?.message || "Upload failed");
+      }
+    } catch(err){
+      statusEl.textContent = "Upload me error: " + err.message;
+      statusEl.className = "status err";
+    }
+  });
+
+  // ---- Add question to list ----
+  window.addQuestion = function(){
+    const topic = document.getElementById('qTopic').value.trim();
+    const text = document.getElementById('qText').value.trim();
+    const opts = [0,1,2,3].map(i=>document.getElementById('opt'+i).value.trim());
+    const correct = parseInt(document.querySelector('input[name=correct]:checked').value);
+    const explanation = document.getElementById('qExplanation').value.trim();
+    const statusEl = document.getElementById('qStatus');
+
+    if(!topic || !text || opts.some(o=>!o)){
+      statusEl.textContent = "Topic, question text aur sabhi 4 options bharo.";
+      statusEl.className = "status err";
+      return;
+    }
+
+    questions.push({
+      topic, text, options: opts, correct, explanation,
+      image: uploadedImageUrl || null
+    });
+
+    // reset form
+    document.getElementById('qTopic').value = '';
+    document.getElementById('qText').value = '';
+    [0,1,2,3].forEach(i=>document.getElementById('opt'+i).value = '');
+    document.getElementById('qExplanation').value = '';
+    document.getElementById('qImage').value = '';
+    document.getElementById('imgPreview').style.display = 'none';
+    document.getElementById('uploadStatus').textContent = '';
+    uploadedImageUrl = null;
+    statusEl.textContent = "Question add ho gaya!";
+    statusEl.className = "status ok";
+
+    renderQList();
+  }
+
+  function renderQList(){
+    const el = document.getElementById('qList');
+    document.getElementById('qCount').textContent = questions.length + " added";
+    if(questions.length === 0){
+      el.innerHTML = '<div class="sub">Abhi koi question add nahi hua.</div>';
+      return;
+    }
+    el.innerHTML = '';
+    questions.forEach((q, idx)=>{
+      const div = document.createElement('div');
+      div.className = 'qitem';
+      div.innerHTML = `
+        <div class="qtext">
+          <div>${idx+1}. ${q.text.slice(0,90)}${q.text.length>90?'...':''}</div>
+          <div class="qtopic">${q.topic}${q.image ? ' • 📷' : ''}</div>
+        </div>
+        <button class="danger" onclick="removeQuestion(${idx})">Remove</button>
+      `;
+      el.appendChild(div);
+    });
+  }
+
+  window.removeQuestion = function(idx){
+    questions.splice(idx,1);
+    renderQList();
+  }
+
+  // ---- Publish ----
+  window.publishTest = async function(){
+    const series = document.getElementById('seriesName').value.trim();
+    const title = document.getElementById('testTitle').value.trim();
+    const marksCorrect = parseFloat(document.getElementById('marksCorrect').value) || 0;
+    const marksWrong = parseFloat(document.getElementById('marksWrong').value) || 0;
+    const timerMin = parseInt(document.getElementById('timerMin').value) || 60;
+    const statusEl = document.getElementById('publishStatus');
+
+    const remarks = [...document.querySelectorAll('.remark-row')].map(row=>({
+      min: parseFloat(row.querySelector('.rmin').value) || 0,
+      max: parseFloat(row.querySelector('.rmax').value) || 0,
+      text: row.querySelector('.rtext').value.trim()
+    })).filter(r=>r.text);
+
+    if(!series || !title){
+      statusEl.textContent = "Series aur test ka naam dono bharo.";
+      statusEl.className = "status err";
+      return;
+    }
+    if(questions.length === 0){
+      statusEl.textContent = "Kam se kam ek question add karo.";
+      statusEl.className = "status err";
+      return;
+    }
+
+    statusEl.textContent = "Publish ho raha hai...";
+    statusEl.className = "status";
+
+    try {
+      await addDoc(collection(db, "tests"), {
+        series, title, marksCorrect, marksWrong, timerMin,
+        remarks, questions,
+        createdAt: serverTimestamp()
+      });
+      statusEl.textContent = "Test successfully publish ho gaya! Home page par jaake dekho.";
+      statusEl.className = "status ok";
+      questions = [];
+      renderQList();
+      document.getElementById('testTitle').value = '';
+    } catch(err){
+      statusEl.textContent = "Error: " + err.message;
+      statusEl.className = "status err";
+    }
+  }
+</script>
+</body>
+</html>
