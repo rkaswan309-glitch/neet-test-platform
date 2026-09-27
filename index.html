@@ -9,88 +9,35 @@
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
   :root{
-    --bg:#0f1720;
-    --panel:#16212c;
-    --panel-2:#1c2a37;
-    --accent:#3ddc84;
-    --accent-dim:#1f8f56;
-    --text:#eef3f6;
-    --text-dim:#9fb0bc;
-    --border:#26343f;
+    --bg:#0f1720; --panel:#16212c; --panel-2:#1c2a37;
+    --accent:#3ddc84; --accent-dim:#1f8f56;
+    --text:#eef3f6; --text-dim:#9fb0bc; --border:#26343f;
   }
   *{box-sizing:border-box;}
-  body{
-    margin:0;
-    background:var(--bg);
-    color:var(--text);
-    font-family:'Inter',sans-serif;
-    min-height:100vh;
-  }
-  h1,h2,.mono{ font-family:'Space Grotesk',sans-serif; }
-  .wrap{
-    max-width:760px;
-    margin:0 auto;
-    padding:40px 18px 60px;
-  }
-  header{ margin-bottom:34px; }
-  header h1{ font-size:1.7rem; margin:0 0 6px; letter-spacing:-0.01em; }
-  header p{ color:var(--text-dim); margin:0; font-size:.95rem; }
+  body{margin:0;background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;min-height:100vh;}
+  h1,h2,.mono{font-family:'Space Grotesk',sans-serif;}
+  .wrap{max-width:760px;margin:0 auto;padding:40px 18px 60px;}
+  header{margin-bottom:30px;}
+  header h1{font-size:1.7rem;margin:0 0 6px;letter-spacing:-0.01em;}
+  header p{color:var(--text-dim);margin:0;font-size:.95rem;}
+
+  .series-block{margin-bottom:30px;}
+  .series-title{font-size:1.05rem;color:var(--accent);margin-bottom:12px;font-family:'Space Grotesk',sans-serif;}
 
   .testcard{
-    background:var(--panel);
-    border:1px solid var(--border);
-    border-radius:12px;
-    padding:22px 24px;
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-    gap:16px;
-    margin-bottom:16px;
-    flex-wrap:wrap;
+    background:var(--panel);border:1px solid var(--border);border-radius:12px;
+    padding:22px 24px;display:flex;justify-content:space-between;align-items:center;
+    gap:16px;margin-bottom:14px;flex-wrap:wrap;
   }
-  .testcard .info h3{
-    margin:0 0 6px;
-    font-size:1.05rem;
-  }
-  .testcard .info p{
-    margin:0;
-    color:var(--text-dim);
-    font-size:.85rem;
-  }
-  .testcard .meta{
-    display:flex;
-    gap:14px;
-    margin-top:10px;
-    font-size:.8rem;
-    color:var(--text-dim);
-  }
-  .testcard .meta span{
-    background:var(--panel-2);
-    border:1px solid var(--border);
-    padding:4px 10px;
-    border-radius:6px;
-  }
+  .testcard .info h3{margin:0 0 6px;font-size:1.05rem;}
+  .testcard .meta{display:flex;gap:14px;margin-top:10px;font-size:.8rem;color:var(--text-dim);}
+  .testcard .meta span{background:var(--panel-2);border:1px solid var(--border);padding:4px 10px;border-radius:6px;}
   a.startbtn{
-    font-family:'Inter',sans-serif;
-    font-weight:600;
-    font-size:.92rem;
-    padding:11px 22px;
-    border-radius:8px;
-    background:var(--accent);
-    color:#06251a;
-    text-decoration:none;
-    white-space:nowrap;
+    font-family:'Inter',sans-serif;font-weight:600;font-size:.92rem;padding:11px 22px;
+    border-radius:8px;background:var(--accent);color:#06251a;text-decoration:none;white-space:nowrap;
   }
-  a.startbtn:hover{ background:#33c877; }
-
-  .empty{
-    color:var(--text-dim);
-    font-size:.9rem;
-    padding:20px 0;
-    text-align:center;
-    border-top:1px solid var(--border);
-    margin-top:10px;
-  }
+  a.startbtn:hover{background:#33c877;}
+  .empty, .loading{color:var(--text-dim);font-size:.9rem;padding:20px 0;text-align:center;}
 </style>
 </head>
 <body>
@@ -99,20 +46,61 @@
     <h1>NEET Practice Tests</h1>
     <p>Apna test chuno aur shuru karo. Har test ke baad score aur topic-wise analysis milega.</p>
   </header>
-
-  <div class="testcard">
-    <div class="info">
-      <h3>Demo Practice Test</h3>
-      <p>Physics, Chemistry, Botany, Zoology ke sample questions</p>
-      <div class="meta">
-        <span>10 Questions</span>
-        <span>10 min</span>
-      </div>
-    </div>
-    <a class="startbtn" href="test.html">Start Test</a>
-  </div>
-
-  <div class="empty">Naye tests jald hi add honge.</div>
+  <div id="content"><div class="loading">Tests load ho rahe hain...</div></div>
 </div>
+
+<script type="module">
+  import { db } from './firebase-config.js';
+  import { collection, getDocs, query, orderBy } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+  const content = document.getElementById('content');
+
+  async function loadTests(){
+    try {
+      const q = query(collection(db, "tests"), orderBy("createdAt", "desc"));
+      const snap = await getDocs(q);
+
+      if(snap.empty){
+        content.innerHTML = '<div class="empty">Abhi koi test available nahi hai. Naye tests jald hi add honge.</div>';
+        return;
+      }
+
+      const bySeries = {};
+      snap.forEach(docSnap=>{
+        const d = docSnap.data();
+        const series = d.series || "Other Tests";
+        if(!bySeries[series]) bySeries[series] = [];
+        bySeries[series].push({id: docSnap.id, ...d});
+      });
+
+      content.innerHTML = '';
+      Object.keys(bySeries).forEach(series=>{
+        const block = document.createElement('div');
+        block.className = 'series-block';
+        const qCount = (t)=> (t.questions ? t.questions.length : 0);
+        block.innerHTML = `
+          <div class="series-title">${series}</div>
+          ${bySeries[series].map(t=>`
+            <div class="testcard">
+              <div class="info">
+                <h3>${t.title}</h3>
+                <div class="meta">
+                  <span>${qCount(t)} Questions</span>
+                  <span>${t.timerMin || 60} min</span>
+                </div>
+              </div>
+              <a class="startbtn" href="test.html?id=${t.id}">Start Test</a>
+            </div>
+          `).join('')}
+        `;
+        content.appendChild(block);
+      });
+    } catch(err){
+      content.innerHTML = `<div class="empty">Tests load karne me error aayi: ${err.message}</div>`;
+    }
+  }
+
+  loadTests();
+</script>
 </body>
 </html>
