@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="hi">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -17,39 +17,27 @@
   body{margin:0;background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;min-height:100vh;}
   h1,h2,h3,.mono{font-family:'Space Grotesk',sans-serif;}
   .wrap{max-width:780px;margin:0 auto;padding:24px 18px 60px;}
-  .hidden{display:none;}
+  .hidden{display:none !important;}
   .center-screen{min-height:80vh;display:flex;align-items:center;justify-content:center;}
-  .gatecard{
-    background:var(--panel);border:1px solid var(--border);border-radius:12px;
-    padding:34px 28px;max-width:400px;width:100%;text-align:center;
-  }
-  .gatecard h2{margin:0 0 6px;font-size:1.3rem;}
-  .gatecard p{color:var(--text-dim);font-size:.88rem;margin:0 0 22px;}
-  .gatecard input{
-    width:100%;background:var(--panel-2);border:1px solid var(--border);border-radius:8px;
-    color:var(--text);padding:12px 14px;font-family:'Inter',sans-serif;font-size:.95rem;margin-bottom:12px;
-  }
-  button{
-    font-family:'Inter',sans-serif;font-weight:600;font-size:.95rem;padding:12px 22px;
-    border-radius:8px;border:1px solid var(--border);background:var(--panel-2);color:var(--text);cursor:pointer;
-  }
+  .startcard{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:34px 28px;max-width:420px;width:100%;text-align:center;}
+  .startcard h2{margin:0 0 6px;font-size:1.3rem;}
+  .startcard p{color:var(--text-dim);font-size:.9rem;margin:0 0 6px;}
+  .infochips{display:flex;justify-content:center;gap:10px;flex-wrap:wrap;margin:18px 0 22px;}
+  .infochips span{background:var(--panel-2);border:1px solid var(--border);padding:5px 12px;border-radius:6px;font-size:.8rem;color:var(--text-dim);}
+  button{font-family:'Inter',sans-serif;font-weight:600;font-size:.95rem;padding:12px 22px;border-radius:8px;border:1px solid var(--border);background:var(--panel-2);color:var(--text);cursor:pointer;}
   button:hover{border-color:#3a4b58;}
   button:disabled{opacity:.4;cursor:not-allowed;}
   button.primary{background:var(--accent);border-color:var(--accent);color:#06251a;width:100%;padding:13px;}
   button.primary:hover{background:#33c877;}
-  .err{color:var(--danger);font-size:.82rem;min-height:16px;margin-bottom:6px;}
-
   header{display:flex;justify-content:space-between;align-items:center;margin-bottom:28px;flex-wrap:wrap;gap:12px;}
   header h1{font-size:1.2rem;margin:0;letter-spacing:-0.01em;}
   #timer{font-family:'Space Grotesk',sans-serif;font-size:1.1rem;background:var(--panel);border:1px solid var(--border);padding:8px 16px;border-radius:8px;color:var(--accent);}
   #timer.low{color:var(--danger);border-color:var(--danger);}
-
   .progress-track{height:4px;background:var(--border);border-radius:2px;overflow:hidden;margin-bottom:28px;}
   .progress-fill{height:100%;background:var(--accent);width:0%;transition:width .25s ease;}
-
   .qcard{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:24px;}
   .qmeta{display:flex;justify-content:space-between;color:var(--text-dim);font-size:.85rem;margin-bottom:14px;}
-  .qtext{font-size:1.05rem;line-height:1.5;margin:0 0 16px;}
+  .qtext{font-size:1.05rem;line-height:1.5;margin:0 0 16px;white-space:pre-wrap;}
   .qimg{max-width:100%;border-radius:8px;margin-bottom:18px;display:block;}
   .options{display:flex;flex-direction:column;gap:10px;}
   .opt{display:flex;align-items:center;gap:12px;padding:13px 16px;border:1px solid var(--border);border-radius:9px;cursor:pointer;background:var(--panel-2);transition:border-color .15s ease, background .15s ease;}
@@ -62,13 +50,11 @@
   .jumpgrid button{padding:8px 0;font-size:.8rem;background:var(--panel-2);}
   .jumpgrid button.answered{background:rgba(61,220,132,0.15);border-color:var(--accent-dim);color:var(--accent);}
   .jumpgrid button.current{outline:2px solid var(--accent);outline-offset:1px;}
-
   .resultcard{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:30px 26px;text-align:center;}
   .scorebig{font-family:'Space Grotesk',sans-serif;font-size:3rem;color:var(--accent);margin:6px 0 0;}
   .scoresub{color:var(--text-dim);font-size:.9rem;}
   .remarkbox{background:var(--panel-2);border:1px solid var(--accent-dim);border-radius:8px;padding:14px 18px;margin:18px 0;font-size:.92rem;}
   .statsrow{display:flex;justify-content:center;gap:26px;margin:22px 0 4px;flex-wrap:wrap;}
-  .statbox{text-align:center;}
   .statbox .num{font-family:'Space Grotesk',sans-serif;font-size:1.5rem;}
   .statbox .lbl{color:var(--text-dim);font-size:.78rem;margin-top:2px;}
   .statbox.correct .num{color:var(--accent);}
@@ -83,23 +69,23 @@
   .barfill.weak{background:var(--danger);}
   .barfill.mid{background:#e0b04d;}
   .topicrow .pct{width:42px;text-align:right;color:var(--text-dim);}
+  .btnrow{display:flex;gap:10px;margin-top:26px;}
+  .btnrow button{flex:1;}
   .loading{text-align:center;color:var(--text-dim);padding:60px 0;}
 </style>
 </head>
 <body>
 <div class="wrap">
 
-  <div id="loadingScreen" class="loading">Test load ho raha hai...</div>
+  <div id="loadingScreen" class="loading">Loading test...</div>
 
-  <!-- GATE SCREEN -->
-  <div id="gateScreen" class="center-screen hidden">
-    <div class="gatecard">
-      <h2 id="gateTitle">Test</h2>
-      <p>Test shuru karne se pehle apni details bharo</p>
-      <input type="text" id="studentName" placeholder="Apna naam">
-      <input type="tel" id="studentMobile" placeholder="Mobile number">
-      <div class="err" id="gateErr"></div>
-      <button class="primary" onclick="startTest()">Test Shuru Karo</button>
+  <!-- START SCREEN -->
+  <div id="startScreen" class="center-screen hidden">
+    <div class="startcard">
+      <p id="hello"></p>
+      <h2 id="startTitle">Test</h2>
+      <div class="infochips" id="chips"></div>
+      <button class="primary" id="startBtn">Start Test</button>
     </div>
   </div>
 
@@ -115,19 +101,19 @@
         <span id="qNumLabel">Question 1</span>
         <span id="qTopicLabel">Topic</span>
       </div>
-      <img id="qImage" class="qimg hidden">
+      <img id="qImage" class="qimg hidden" alt="Question diagram">
       <p class="qtext" id="qText"></p>
       <div class="options" id="optionsBox"></div>
     </div>
     <div class="navrow">
       <button id="prevBtn">Previous</button>
       <button id="clearBtn">Clear Response</button>
-      <button id="nextBtn" class="primary">Save &amp; Next</button>
+      <button id="nextBtn" class="primary" style="width:auto;">Save &amp; Next</button>
     </div>
     <div class="jumpgrid" id="jumpGrid"></div>
     <div class="navrow" style="margin-top:26px;">
       <span></span>
-      <button id="submitBtn" class="primary">Submit Test</button>
+      <button id="submitBtn" class="primary" style="width:auto;">Submit Test</button>
     </div>
   </div>
 
@@ -147,7 +133,10 @@
         <h3>Topic-wise Performance</h3>
         <div id="topicList"></div>
       </div>
-      <button class="primary" style="margin-top:26px;" onclick="location.href='index.html'">Home Page</button>
+      <div class="btnrow">
+        <button onclick="location.href='history.html'">My Results</button>
+        <button class="primary" onclick="location.href='index.html'">Home</button>
+      </div>
     </div>
   </div>
 </div>
@@ -155,63 +144,60 @@
 <script type="module">
   import { db } from './firebase-config.js';
   import { doc, getDoc, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+  import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
-  const params = new URLSearchParams(window.location.search);
-  const testId = params.get('id');
-
-  let testData = null;
-  let questions = [];
-  let answers = [];
-  let current = 0;
-  let secondsLeft = 0;
-  let timerInterval = null;
-  let studentInfo = {name:'', mobile:''};
-
+  const DOMAIN = "@students.neetplatform.app";
+  const auth = getAuth();
   const el = id => document.getElementById(id);
 
-  async function loadTest(){
-    if(!testId){
-      el('loadingScreen').textContent = "Test ID nahi mila. Home page se test select karo.";
+  const testId = new URLSearchParams(location.search).get('id');
+
+  let user = null;
+  let loadStarted = false;
+  let testData = null, questions = [], answers = [], current = 0;
+  let secondsLeft = 0, timerInterval = null, submitted = false;
+
+  onAuthStateChanged(auth, u => {
+    if(!(u && u.email && u.email.endsWith(DOMAIN))){
+      location.replace('login.html?next=' + encodeURIComponent('test.html' + location.search));
       return;
     }
+    user = u;
+    if(!loadStarted){ loadStarted = true; loadTest(); }
+  });
+
+  async function loadTest(){
+    if(!testId){ el('loadingScreen').textContent = "Test not found. Please choose a test from the home page."; return; }
     try{
       const snap = await getDoc(doc(db, "tests", testId));
-      if(!snap.exists()){
-        el('loadingScreen').textContent = "Ye test nahi mila.";
-        return;
-      }
+      if(!snap.exists()){ el('loadingScreen').textContent = "This test does not exist."; return; }
       testData = snap.data();
       questions = testData.questions || [];
       answers = new Array(questions.length).fill(null);
       secondsLeft = (testData.timerMin || 60) * 60;
 
-      el('gateTitle').textContent = testData.title || "Test";
-      el('testTitleHeader').textContent = testData.title || "Test";
+      el('hello').textContent = 'Hi, ' + (user.displayName || 'Student');
+      el('startTitle').textContent = testData.title || 'Test';
+      el('testTitleHeader').textContent = testData.title || 'Test';
+      const chips = el('chips');
+      const cm = testData.marksCorrect ?? 4, wm = testData.marksWrong ?? 1;
+      [questions.length + ' Questions', (testData.timerMin || 60) + ' min', '+' + cm + ' / -' + wm + ' marking']
+        .forEach(t => { const s = document.createElement('span'); s.textContent = t; chips.appendChild(s); });
+
       el('loadingScreen').classList.add('hidden');
-      el('gateScreen').classList.remove('hidden');
+      el('startScreen').classList.remove('hidden');
     } catch(err){
       el('loadingScreen').textContent = "Error: " + err.message;
     }
   }
 
-  window.startTest = function(){
-    const name = el('studentName').value.trim();
-    const mobile = el('studentMobile').value.trim();
-    const errEl = el('gateErr');
-    if(!name || !mobile){
-      errEl.textContent = "Naam aur mobile number dono bharo.";
-      return;
-    }
-    if(!/^\d{10}$/.test(mobile)){
-      errEl.textContent = "Sahi 10-digit mobile number daalo.";
-      return;
-    }
-    studentInfo = {name, mobile};
-    el('gateScreen').classList.add('hidden');
+  el('startBtn').onclick = () => {
+    if(!questions.length){ return; }
+    el('startScreen').classList.add('hidden');
     el('testScreen').classList.remove('hidden');
     renderQuestion();
     startTimer();
-  }
+  };
 
   function renderQuestion(){
     const q = questions[current];
@@ -219,84 +205,81 @@
     el('qTopicLabel').textContent = q.topic || '';
     el('qText').textContent = (current+1) + ". " + q.text;
 
-    const imgEl = el('qImage');
-    if(q.image){
-      imgEl.src = q.image;
-      imgEl.classList.remove('hidden');
-    } else {
-      imgEl.classList.add('hidden');
-    }
+    const img = el('qImage');
+    if(q.image){ img.src = q.image; img.classList.remove('hidden'); }
+    else { img.classList.add('hidden'); }
 
     const box = el('optionsBox');
     box.innerHTML = '';
-    q.options.forEach((opt, idx)=>{
+    q.options.forEach((opt, idx) => {
       const div = document.createElement('div');
-      div.className = 'opt' + (answers[current]===idx ? ' selected' : '');
-      div.innerHTML = `<span class="tag">${String.fromCharCode(65+idx)}</span><span>${opt}</span>`;
-      div.onclick = ()=>{ answers[current]=idx; renderQuestion(); };
+      div.className = 'opt' + (answers[current] === idx ? ' selected' : '');
+      const tag = document.createElement('span'); tag.className = 'tag'; tag.textContent = String.fromCharCode(65 + idx);
+      const txt = document.createElement('span'); txt.textContent = opt;
+      div.appendChild(tag); div.appendChild(txt);
+      div.onclick = () => { answers[current] = idx; renderQuestion(); };
       box.appendChild(div);
     });
 
-    el('progressFill').style.width = ((current+1)/questions.length*100) + "%";
-    el('prevBtn').disabled = current===0;
-    el('nextBtn').textContent = (current===questions.length-1) ? "Submit Test" : "Save & Next";
+    el('progressFill').style.width = ((current+1) / questions.length * 100) + "%";
+    el('prevBtn').disabled = current === 0;
+    el('nextBtn').textContent = (current === questions.length - 1) ? "Submit Test" : "Save & Next";
     renderJumpGrid();
   }
 
   function renderJumpGrid(){
     const grid = el('jumpGrid');
     grid.innerHTML = '';
-    questions.forEach((_, idx)=>{
+    questions.forEach((_, idx) => {
       const b = document.createElement('button');
-      b.textContent = idx+1;
-      if(answers[idx]!==null) b.classList.add('answered');
-      if(idx===current) b.classList.add('current');
-      b.onclick = ()=>{ current=idx; renderQuestion(); };
+      b.textContent = idx + 1;
+      if(answers[idx] !== null) b.classList.add('answered');
+      if(idx === current) b.classList.add('current');
+      b.onclick = () => { current = idx; renderQuestion(); };
       grid.appendChild(b);
     });
   }
 
-  el('prevBtn').onclick = ()=>{ if(current>0){ current--; renderQuestion(); } };
-  el('nextBtn').onclick = ()=>{
-    if(current<questions.length-1){ current++; renderQuestion(); }
+  el('prevBtn').onclick = () => { if(current > 0){ current--; renderQuestion(); } };
+  el('nextBtn').onclick = () => {
+    if(current < questions.length - 1){ current++; renderQuestion(); }
     else { submitTest(); }
   };
-  el('clearBtn').onclick = ()=>{ answers[current]=null; renderQuestion(); };
+  el('clearBtn').onclick = () => { answers[current] = null; renderQuestion(); };
   el('submitBtn').onclick = submitTest;
 
   function startTimer(){
-    const fmt = s=>{
-      const m = Math.floor(s/60).toString().padStart(2,'0');
-      const sec = (s%60).toString().padStart(2,'0');
-      return `${m}:${sec}`;
-    };
+    const fmt = s => String(Math.floor(s/60)).padStart(2,'0') + ':' + String(s%60).padStart(2,'0');
     el('timer').textContent = fmt(secondsLeft);
-    timerInterval = setInterval(()=>{
+    timerInterval = setInterval(() => {
       secondsLeft--;
-      el('timer').textContent = fmt(secondsLeft);
-      if(secondsLeft<=60) el('timer').classList.add('low');
-      if(secondsLeft<=0){ clearInterval(timerInterval); submitTest(); }
+      el('timer').textContent = fmt(Math.max(secondsLeft, 0));
+      if(secondsLeft <= 60) el('timer').classList.add('low');
+      if(secondsLeft <= 0){ clearInterval(timerInterval); submitTest(); }
     }, 1000);
   }
 
   async function submitTest(){
+    if(submitted) return;
+    submitted = true;
     clearInterval(timerInterval);
 
     const marksCorrect = testData.marksCorrect ?? 4;
     const marksWrong = testData.marksWrong ?? 1;
-    let correct=0, wrong=0, skipped=0;
+    let correct = 0, wrong = 0, skipped = 0;
     const topicStats = {};
 
-    questions.forEach((q, idx)=>{
-      if(!topicStats[q.topic]) topicStats[q.topic] = {correct:0,total:0};
-      topicStats[q.topic].total++;
-      if(answers[idx]===null){ skipped++; }
-      else if(answers[idx]===q.correct){ correct++; topicStats[q.topic].correct++; }
-      else{ wrong++; }
+    questions.forEach((q, idx) => {
+      const key = q.topic || 'General';
+      if(!topicStats[key]) topicStats[key] = {correct:0, total:0};
+      topicStats[key].total++;
+      if(answers[idx] === null){ skipped++; }
+      else if(answers[idx] === q.correct){ correct++; topicStats[key].correct++; }
+      else { wrong++; }
     });
 
-    const score = correct*marksCorrect - wrong*marksWrong;
-    const maxScore = questions.length*marksCorrect;
+    const score = correct * marksCorrect - wrong * marksWrong;
+    const maxScore = questions.length * marksCorrect;
 
     el('testScreen').classList.add('hidden');
     el('resultScreen').classList.remove('hidden');
@@ -306,41 +289,38 @@
     el('wrongCount').textContent = wrong;
     el('skippedCount').textContent = skipped;
 
-    const remarks = testData.remarks || [];
-    const matched = remarks.find(r => score >= r.min && score <= r.max);
-    el('remarkBox').textContent = matched ? matched.text : '';
-    if(!matched) el('remarkBox').style.display = 'none';
+    const matched = (testData.remarks || []).find(r => score >= r.min && score <= r.max);
+    if(matched){ el('remarkBox').textContent = matched.text; } else { el('remarkBox').classList.add('hidden'); }
 
-    const topicList = el('topicList');
-    topicList.innerHTML = '';
-    Object.keys(topicStats).forEach(topic=>{
+    const list = el('topicList');
+    list.innerHTML = '';
+    Object.keys(topicStats).forEach(topic => {
       const s = topicStats[topic];
-      const pct = Math.round((s.correct/s.total)*100);
-      let cls = 'mid';
-      if(pct>=70) cls='strong'; else if(pct<40) cls='weak';
-      const row = document.createElement('div');
-      row.className = 'topicrow';
-      row.innerHTML = `
-        <span class="tname">${topic}</span>
-        <div class="barbg"><div class="barfill ${cls}" style="width:${pct}%"></div></div>
-        <span class="pct">${pct}%</span>
-      `;
-      topicList.appendChild(row);
+      const pct = Math.round((s.correct / s.total) * 100);
+      const cls = pct >= 70 ? 'strong' : (pct < 40 ? 'weak' : 'mid');
+      const row = document.createElement('div'); row.className = 'topicrow';
+      const n = document.createElement('span'); n.className = 'tname'; n.textContent = topic;
+      const bg = document.createElement('div'); bg.className = 'barbg';
+      const f = document.createElement('div'); f.className = 'barfill ' + cls; f.style.width = pct + '%';
+      bg.appendChild(f);
+      const p = document.createElement('span'); p.className = 'pct'; p.textContent = pct + '%';
+      row.appendChild(n); row.appendChild(bg); row.appendChild(p);
+      list.appendChild(row);
     });
 
     try{
       await addDoc(collection(db, "attempts"), {
+        uid: user.uid,
+        name: user.displayName || 'Student',
+        mobile: user.email.split('@')[0],
         testId, testTitle: testData.title,
-        name: studentInfo.name, mobile: studentInfo.mobile,
         score, maxScore, correct, wrong, skipped,
         topicStats, submittedAt: serverTimestamp()
       });
     } catch(err){
-      console.error("Result save nahi ho paya:", err.message);
+      console.error("Could not save result:", err.message);
     }
   }
-
-  loadTest();
 </script>
 </body>
 </html>
