@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="hi">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -16,90 +16,102 @@
   *{box-sizing:border-box;}
   body{margin:0;background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;min-height:100vh;}
   h1,h2,.mono{font-family:'Space Grotesk',sans-serif;}
-  .wrap{max-width:760px;margin:0 auto;padding:40px 18px 60px;}
+  .wrap{max-width:760px;margin:0 auto;padding:30px 18px 60px;}
+  .authbar{display:flex;justify-content:flex-end;align-items:center;gap:14px;font-size:.88rem;color:var(--text-dim);margin-bottom:26px;flex-wrap:wrap;min-height:34px;}
+  .authbar a{color:var(--accent);text-decoration:none;font-weight:600;}
+  .authbar button{background:none;border:1px solid var(--border);color:var(--text-dim);border-radius:8px;padding:6px 12px;cursor:pointer;font-family:'Inter',sans-serif;font-size:.82rem;}
   header{margin-bottom:30px;}
   header h1{font-size:1.7rem;margin:0 0 6px;letter-spacing:-0.01em;}
   header p{color:var(--text-dim);margin:0;font-size:.95rem;}
-
   .series-block{margin-bottom:30px;}
   .series-title{font-size:1.05rem;color:var(--accent);margin-bottom:12px;font-family:'Space Grotesk',sans-serif;}
-
-  .testcard{
-    background:var(--panel);border:1px solid var(--border);border-radius:12px;
-    padding:22px 24px;display:flex;justify-content:space-between;align-items:center;
-    gap:16px;margin-bottom:14px;flex-wrap:wrap;
-  }
-  .testcard .info h3{margin:0 0 6px;font-size:1.05rem;}
-  .testcard .meta{display:flex;gap:14px;margin-top:10px;font-size:.8rem;color:var(--text-dim);}
-  .testcard .meta span{background:var(--panel-2);border:1px solid var(--border);padding:4px 10px;border-radius:6px;}
-  a.startbtn{
-    font-family:'Inter',sans-serif;font-weight:600;font-size:.92rem;padding:11px 22px;
-    border-radius:8px;background:var(--accent);color:#06251a;text-decoration:none;white-space:nowrap;
-  }
+  .testcard{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:22px 24px;display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:14px;flex-wrap:wrap;}
+  .testcard h3{margin:0 0 6px;font-size:1.05rem;}
+  .meta{display:flex;gap:14px;margin-top:10px;font-size:.8rem;color:var(--text-dim);}
+  .meta span{background:var(--panel-2);border:1px solid var(--border);padding:4px 10px;border-radius:6px;}
+  a.startbtn{font-weight:600;font-size:.92rem;padding:11px 22px;border-radius:8px;background:var(--accent);color:#06251a;text-decoration:none;white-space:nowrap;}
   a.startbtn:hover{background:#33c877;}
-  .empty, .loading{color:var(--text-dim);font-size:.9rem;padding:20px 0;text-align:center;}
+  .empty{color:var(--text-dim);font-size:.9rem;padding:20px 0;text-align:center;}
 </style>
 </head>
 <body>
 <div class="wrap">
+  <div class="authbar" id="authBar"></div>
   <header>
     <h1>NEET Practice Tests</h1>
-    <p>Apna test chuno aur shuru karo. Har test ke baad score aur topic-wise analysis milega.</p>
+    <p>Choose a test and start. After every test you get your score and topic-wise analysis.</p>
   </header>
-  <div id="content"><div class="loading">Tests load ho rahe hain...</div></div>
+  <div id="content"><div class="empty">Loading tests...</div></div>
 </div>
 
 <script type="module">
   import { db } from './firebase-config.js';
   import { collection, getDocs, query, orderBy } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+  import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
+  const DOMAIN = "@students.neetplatform.app";
+  const auth = getAuth();
   const content = document.getElementById('content');
+  const authBar = document.getElementById('authBar');
+
+  function mk(tag, text, attrs){
+    const e = document.createElement(tag);
+    if(text != null) e.textContent = text;
+    if(attrs) Object.entries(attrs).forEach(([k,v]) => e.setAttribute(k, v));
+    return e;
+  }
+
+  onAuthStateChanged(auth, u => {
+    authBar.innerHTML = '';
+    if(u && u.email && u.email.endsWith(DOMAIN)){
+      authBar.appendChild(mk('span', 'Hi, ' + (u.displayName || 'Student')));
+      authBar.appendChild(mk('a', 'My Results', {href:'history.html'}));
+      const b = mk('button', 'Logout');
+      b.onclick = () => signOut(auth);
+      authBar.appendChild(b);
+    } else {
+      authBar.appendChild(mk('a', 'Login / Register', {href:'login.html?next=index.html'}));
+    }
+  });
 
   async function loadTests(){
-    try {
-      const q = query(collection(db, "tests"), orderBy("createdAt", "desc"));
-      const snap = await getDocs(q);
-
+    try{
+      const snap = await getDocs(query(collection(db, "tests"), orderBy("createdAt", "desc")));
       if(snap.empty){
-        content.innerHTML = '<div class="empty">Abhi koi test available nahi hai. Naye tests jald hi add honge.</div>';
+        content.innerHTML = '';
+        content.appendChild(mk('div', 'No tests available yet. New tests will be added soon.', {class:'empty'}));
         return;
       }
-
       const bySeries = {};
-      snap.forEach(docSnap=>{
-        const d = docSnap.data();
-        const series = d.series || "Other Tests";
-        if(!bySeries[series]) bySeries[series] = [];
-        bySeries[series].push({id: docSnap.id, ...d});
+      snap.forEach(d => {
+        const t = d.data();
+        const s = t.series || 'Other Tests';
+        (bySeries[s] = bySeries[s] || []).push({id: d.id, ...t});
       });
 
       content.innerHTML = '';
-      Object.keys(bySeries).forEach(series=>{
-        const block = document.createElement('div');
-        block.className = 'series-block';
-        const qCount = (t)=> (t.questions ? t.questions.length : 0);
-        block.innerHTML = `
-          <div class="series-title">${series}</div>
-          ${bySeries[series].map(t=>`
-            <div class="testcard">
-              <div class="info">
-                <h3>${t.title}</h3>
-                <div class="meta">
-                  <span>${qCount(t)} Questions</span>
-                  <span>${t.timerMin || 60} min</span>
-                </div>
-              </div>
-              <a class="startbtn" href="test.html?id=${t.id}">Start Test</a>
-            </div>
-          `).join('')}
-        `;
+      Object.keys(bySeries).forEach(series => {
+        const block = mk('div', null, {class:'series-block'});
+        block.appendChild(mk('div', series, {class:'series-title'}));
+        bySeries[series].forEach(t => {
+          const card = mk('div', null, {class:'testcard'});
+          const info = mk('div');
+          info.appendChild(mk('h3', t.title));
+          const meta = mk('div', null, {class:'meta'});
+          meta.appendChild(mk('span', (t.questions ? t.questions.length : 0) + ' Questions'));
+          meta.appendChild(mk('span', (t.timerMin || 60) + ' min'));
+          info.appendChild(meta);
+          card.appendChild(info);
+          card.appendChild(mk('a', 'Start Test', {class:'startbtn', href:'test.html?id=' + encodeURIComponent(t.id)}));
+          block.appendChild(card);
+        });
         content.appendChild(block);
       });
     } catch(err){
-      content.innerHTML = `<div class="empty">Tests load karne me error aayi: ${err.message}</div>`;
+      content.innerHTML = '';
+      content.appendChild(mk('div', 'Could not load tests: ' + err.message, {class:'empty'}));
     }
   }
-
   loadTests();
 </script>
 </body>
