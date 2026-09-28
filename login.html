@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Login - NEET Practice Tests</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0f1720; --panel:#16212c; --panel-2:#1c2a37;
+    --accent:#3ddc84; --danger:#ff6b5e;
+    --text:#eef3f6; --text-dim:#9fb0bc; --border:#26343f;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;}
+  h1,h2{font-family:'Space Grotesk',sans-serif;}
+  .hidden{display:none !important;}
+  .center{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;}
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:32px 26px;max-width:400px;width:100%;}
+  .card h1{font-size:1.35rem;margin:0 0 4px;text-align:center;}
+  .card .sub{color:var(--text-dim);font-size:.88rem;text-align:center;margin-bottom:20px;}
+  .tabs{display:flex;gap:8px;margin-bottom:18px;}
+  .tab{flex:1;padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--panel-2);color:var(--text-dim);font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;font-size:.9rem;}
+  .tab.active{border-color:var(--accent);color:var(--accent);}
+  label{display:block;font-size:.8rem;color:var(--text-dim);margin:10px 0 5px;}
+  input{width:100%;background:var(--panel-2);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:12px 14px;font-family:'Inter',sans-serif;font-size:.95rem;}
+  button.primary{width:100%;margin-top:18px;padding:13px;border-radius:8px;border:1px solid var(--accent);background:var(--accent);color:#06251a;font-weight:600;font-size:.95rem;cursor:pointer;font-family:'Inter',sans-serif;}
+  button.primary:disabled{opacity:.5;cursor:not-allowed;}
+  .err{color:var(--danger);font-size:.83rem;min-height:18px;margin-top:10px;}
+  .note{color:var(--text-dim);font-size:.78rem;margin-top:14px;line-height:1.5;}
+  a.back{display:block;text-align:center;color:var(--text-dim);font-size:.82rem;margin-top:16px;text-decoration:none;}
+</style>
+</head>
+<body>
+<div class="center">
+  <div class="card">
+    <h1>NEET Practice Tests</h1>
+    <div class="sub">Login to take tests and track your results</div>
+
+    <div class="tabs">
+      <button class="tab active" id="tabLogin">Login</button>
+      <button class="tab" id="tabRegister">Register</button>
+    </div>
+
+    <div id="nameWrap" class="hidden">
+      <label for="fullName">Full name</label>
+      <input type="text" id="fullName" placeholder="Your name" autocomplete="name">
+    </div>
+
+    <label for="mobile">Mobile number</label>
+    <input type="tel" id="mobile" placeholder="10-digit mobile number" maxlength="10" autocomplete="username">
+
+    <label for="password">Password</label>
+    <input type="password" id="password" placeholder="At least 6 characters" autocomplete="current-password">
+
+    <div class="err" id="err"></div>
+    <button class="primary" id="submitBtn">Login</button>
+
+    <div class="note hidden" id="regNote">
+      Your mobile number is your login ID. Please remember your password &mdash;
+      it cannot be recovered automatically.
+    </div>
+    <a class="back" href="index.html">&larr; Back to home</a>
+  </div>
+</div>
+
+<script type="module">
+  import './firebase-config.js';
+  import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile, onAuthStateChanged }
+    from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+  const DOMAIN = "@students.neetplatform.app";
+  const auth = getAuth();
+  const $ = id => document.getElementById(id);
+
+  // Only allow redirects to our own student pages
+  function safeNext(v){
+    return (v && /^(test|history|index)\.html(\?[A-Za-z0-9=&_-]*)?$/.test(v)) ? v : 'index.html';
+  }
+  const next = safeNext(new URLSearchParams(location.search).get('next'));
+
+  let mode = 'login';
+  let busy = false;
+
+  onAuthStateChanged(auth, u => {
+    if(!busy && u && u.email && u.email.endsWith(DOMAIN)) location.replace(next);
+  });
+
+  function setMode(m){
+    mode = m;
+    $('tabLogin').classList.toggle('active', m==='login');
+    $('tabRegister').classList.toggle('active', m==='register');
+    $('nameWrap').classList.toggle('hidden', m!=='register');
+    $('regNote').classList.toggle('hidden', m!=='register');
+    $('submitBtn').textContent = m==='login' ? 'Login' : 'Create account';
+    $('password').autocomplete = m==='login' ? 'current-password' : 'new-password';
+    $('err').textContent = '';
+  }
+  $('tabLogin').onclick = () => setMode('login');
+  $('tabRegister').onclick = () => setMode('register');
+
+  $('submitBtn').onclick = async () => {
+    const mobile = $('mobile').value.trim();
+    const password = $('password').value;
+    const name = $('fullName').value.trim();
+    const err = $('err');
+    err.textContent = '';
+
+    if(!/^\d{10}$/.test(mobile)){ err.textContent = 'Enter a valid 10-digit mobile number.'; return; }
+    if(password.length < 6){ err.textContent = 'Password must be at least 6 characters.'; return; }
+    if(mode==='register' && !name){ err.textContent = 'Please enter your name.'; return; }
+
+    $('submitBtn').disabled = true;
+    busy = true;
+    try{
+      if(mode==='register'){
+        const cred = await createUserWithEmailAndPassword(auth, mobile + DOMAIN, password);
+        await updateProfile(cred.user, { displayName: name });
+      } else {
+        await signInWithEmailAndPassword(auth, mobile + DOMAIN, password);
+      }
+      location.replace(next);
+    } catch(e){
+      busy = false;
+      $('submitBtn').disabled = false;
+      const code = e.code || '';
+      if(code === 'auth/email-already-in-use') err.textContent = 'This mobile number is already registered. Please login.';
+      else if(code === 'auth/invalid-credential' || code === 'auth/wrong-password' || code === 'auth/user-not-found') err.textContent = 'Wrong mobile number or password.';
+      else if(code === 'auth/too-many-requests') err.textContent = 'Too many attempts. Please try again after some time.';
+      else err.textContent = 'Something went wrong. Please try again.';
+    }
+  };
+</script>
+</body>
+</html>
