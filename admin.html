@@ -52,10 +52,32 @@
   .status.ok{color:var(--accent);}
   .status.err{color:var(--danger);}
   .count-badge{background:var(--accent);color:#06251a;border-radius:20px;padding:2px 10px;font-size:.78rem;font-weight:700;}
+  .center-screen{min-height:80vh;display:flex;align-items:center;justify-content:center;}
+  .logincard{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:34px 28px;max-width:360px;width:100%;text-align:center;}
+  .logincard h2{margin:0 0 20px;font-size:1.3rem;font-family:'Space Grotesk',sans-serif;}
+  .logincard input{width:100%;background:var(--panel-2);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:12px 14px;font-size:.95rem;margin-bottom:12px;}
+  .err{color:var(--danger);font-size:.82rem;min-height:16px;margin-bottom:6px;}
+  #logoutBtn{position:fixed;top:16px;right:16px;}
+  .hidden{display:none;}
 </style>
 </head>
 <body>
 <div class="wrap">
+
+  <!-- LOGIN SCREEN -->
+  <div id="loginScreen" class="center-screen hidden">
+    <div class="logincard">
+      <h2>Admin Login</h2>
+      <input type="text" id="loginEmail" placeholder="Email">
+      <input type="password" id="loginPassword" placeholder="Password">
+      <div class="err" id="loginErr"></div>
+      <button class="primary" style="width:100%;padding:12px;" onclick="doLogin()">Login</button>
+    </div>
+  </div>
+
+  <!-- ADMIN PANEL (hidden until logged in) -->
+  <div id="adminPanel" class="hidden">
+  <button id="logoutBtn" onclick="doLogout()">Logout</button>
   <h1>Admin Panel</h1>
   <div class="sub">Naya test banao — question add karo aur publish karo</div>
 
@@ -135,11 +157,38 @@
     <button class="primary" style="width:100%;padding:14px;font-size:1rem;" onclick="publishTest()">Test Publish Karo</button>
     <div class="status" id="publishStatus"></div>
   </div>
+  </div><!-- /adminPanel -->
 </div>
 
 <script type="module">
   import { db } from './firebase-config.js';
   import { collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+  import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+  const auth = getAuth();
+
+  onAuthStateChanged(auth, (user)=>{
+    if(user){
+      document.getElementById('loginScreen').classList.add('hidden');
+      document.getElementById('adminPanel').classList.remove('hidden');
+    } else {
+      document.getElementById('loginScreen').classList.remove('hidden');
+      document.getElementById('adminPanel').classList.add('hidden');
+    }
+  });
+
+  window.doLogin = function(){
+    const email = document.getElementById('loginEmail').value.trim();
+    const password = document.getElementById('loginPassword').value;
+    const errEl = document.getElementById('loginErr');
+    errEl.textContent = '';
+    signInWithEmailAndPassword(auth, email, password)
+      .catch(err=>{ errEl.textContent = "Login galat hai: " + err.message; });
+  }
+
+  window.doLogout = function(){
+    signOut(auth);
+  }
 
   const CLOUD_NAME = "qre5hpol";
   const UPLOAD_PRESET = "neet_question";
