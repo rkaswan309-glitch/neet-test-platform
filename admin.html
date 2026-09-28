@@ -78,8 +78,12 @@
   <!-- ADMIN PANEL (hidden until logged in) -->
   <div id="adminPanel" class="hidden">
   <button id="logoutBtn" onclick="doLogout()">Logout</button>
-  <h1>Admin Panel</h1>
-  <div class="sub">Naya test banao — question add karo aur publish karo</div>
+  <h1 id="pageTitle">Admin Panel</h1>
+  <div class="sub" id="pageSub">Naya test banao — question add karo aur publish karo</div>
+  <div style="margin-bottom:18px;display:flex;gap:16px;flex-wrap:wrap;font-size:.88rem;">
+    <a href="manage.html" style="color:var(--accent);text-decoration:none;font-weight:600;">Manage Tests (edit / delete)</a>
+    <a href="students.html" style="color:var(--accent);text-decoration:none;font-weight:600;">Students Data</a>
+  </div>
 
   <!-- TEST INFO -->
   <div class="card">
@@ -129,6 +133,7 @@
     <label>Diagram / Photo (optional)</label>
     <input type="file" id="qImage" accept="image/*">
     <img id="imgPreview" class="imgpreview">
+    <button type="button" id="removeImgBtn" class="danger hidden" style="margin-top:8px;">Photo hatao</button>
     <div class="status" id="uploadStatus"></div>
 
     <label>Options (sahi jawab ke saamne wala radio button select karo)</label>
@@ -141,20 +146,21 @@
     <textarea id="qExplanation" placeholder="Sahi jawab kyun sahi hai"></textarea>
 
     <div style="margin-top:14px;">
-      <button class="primary" onclick="addQuestion()">Question List me Add karo</button>
+      <button class="primary" id="addBtn" onclick="addQuestion()">Question List me Add karo</button>
+      <button id="cancelEditBtn" class="hidden" onclick="cancelEdit()">Edit cancel karo</button>
     </div>
     <div class="status" id="qStatus"></div>
   </div>
 
   <!-- QUESTION LIST -->
   <div class="card">
-    <h2>4. Add kiye gaye Questions</h2>
+    <h2>4. Test ke Questions (Edit / Remove yahan se)</h2>
     <div class="qlist" id="qList"><div class="sub">Abhi koi question add nahi hua.</div></div>
   </div>
 
   <!-- PUBLISH -->
   <div class="card">
-    <button class="primary" style="width:100%;padding:14px;font-size:1rem;" onclick="publishTest()">Test Publish Karo</button>
+    <button class="primary" id="publishBtn" style="width:100%;padding:14px;font-size:1rem;" onclick="publishTest()">Test Publish Karo</button>
     <div class="status" id="publishStatus"></div>
   </div>
   </div><!-- /adminPanel -->
@@ -162,162 +168,215 @@
 
 <script type="module">
   import { db } from './firebase-config.js';
-  import { collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+  import { collection, addDoc, doc, getDoc, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
   import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
   const auth = getAuth();
+  const $ = id => document.getElementById(id);
+  const editId = new URLSearchParams(location.search).get('edit');
+  let editLoaded = false;
 
   onAuthStateChanged(auth, (user)=>{
     if(user){
-      document.getElementById('loginScreen').classList.add('hidden');
-      document.getElementById('adminPanel').classList.remove('hidden');
+      $('loginScreen').classList.add('hidden');
+      $('adminPanel').classList.remove('hidden');
+      if(editId && !editLoaded){ editLoaded = true; loadForEdit(); }
     } else {
-      document.getElementById('loginScreen').classList.remove('hidden');
-      document.getElementById('adminPanel').classList.add('hidden');
+      $('loginScreen').classList.remove('hidden');
+      $('adminPanel').classList.add('hidden');
     }
   });
 
   window.doLogin = function(){
-    const email = document.getElementById('loginEmail').value.trim();
-    const password = document.getElementById('loginPassword').value;
-    const errEl = document.getElementById('loginErr');
+    const email = $('loginEmail').value.trim();
+    const password = $('loginPassword').value;
+    const errEl = $('loginErr');
     errEl.textContent = '';
     signInWithEmailAndPassword(auth, email, password)
       .catch(err=>{ errEl.textContent = "Login galat hai: " + err.message; });
   }
-
-  window.doLogout = function(){
-    signOut(auth);
-  }
+  window.doLogout = function(){ signOut(auth); }
 
   const CLOUD_NAME = "qre5hpol";
   const UPLOAD_PRESET = "neet_question";
 
   let questions = [];
   let uploadedImageUrl = null;
+  let editIndex = null;
 
   // ---- Remarks ----
   window.addRemarkRow = function(min="", max="", text=""){
-    const box = document.getElementById('remarksBox');
     const row = document.createElement('div');
     row.className = 'remark-row';
-    row.innerHTML = `
-      <input type="number" placeholder="Min score" value="${min}" class="rmin">
-      <input type="number" placeholder="Max score" value="${max}" class="rmax">
-      <input type="text" placeholder="Remark text" value="${text}" class="rtext">
-      <button class="danger" onclick="this.parentElement.remove()">X</button>
-    `;
-    box.appendChild(row);
+    const a = document.createElement('input'); a.type='number'; a.placeholder='Min score'; a.className='rmin'; a.value=min;
+    const b = document.createElement('input'); b.type='number'; b.placeholder='Max score'; b.className='rmax'; b.value=max;
+    const c = document.createElement('input'); c.type='text'; c.placeholder='Remark text'; c.className='rtext'; c.value=text;
+    const x = document.createElement('button'); x.className='danger'; x.textContent='X'; x.onclick=()=>row.remove();
+    row.append(a,b,c,x);
+    $('remarksBox').appendChild(row);
   }
-  addRemarkRow(600,720,"Excellent! Top government college ka strong chance.");
-  addRemarkRow(450,599,"Good score, thoda aur practice karo.");
-  addRemarkRow(0,449,"Weak areas par zyada focus karo.");
+  if(!editId){
+    addRemarkRow(600,720,"Excellent! Top government college ka strong chance.");
+    addRemarkRow(450,599,"Good score, thoda aur practice karo.");
+    addRemarkRow(0,449,"Weak areas par zyada focus karo.");
+  }
 
-  // ---- Image upload ----
-  document.getElementById('qImage').addEventListener('change', async (e)=>{
+  // ---- Image handling ----
+  function setImage(url){
+    uploadedImageUrl = url || null;
+    const preview = $('imgPreview');
+    if(url){ preview.src = url; preview.style.display = 'block'; $('removeImgBtn').classList.remove('hidden'); }
+    else { preview.removeAttribute('src'); preview.style.display = 'none'; $('removeImgBtn').classList.add('hidden'); }
+  }
+  $('removeImgBtn').onclick = ()=>{ setImage(null); $('qImage').value=''; $('uploadStatus').textContent=''; };
+
+  $('qImage').addEventListener('change', async (e)=>{
     const file = e.target.files[0];
     if(!file) return;
-    const statusEl = document.getElementById('uploadStatus');
+    const statusEl = $('uploadStatus');
     statusEl.textContent = "Uploading...";
     statusEl.className = "status";
-    const preview = document.getElementById('imgPreview');
-    preview.style.display = 'none';
-    uploadedImageUrl = null;
 
     const formData = new FormData();
     formData.append('file', file);
     formData.append('upload_preset', UPLOAD_PRESET);
-
     try {
-      const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`, {
-        method: 'POST', body: formData
-      });
+      const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`, { method:'POST', body: formData });
       const data = await res.json();
       if(data.secure_url){
-        uploadedImageUrl = data.secure_url;
-        preview.src = uploadedImageUrl;
-        preview.style.display = 'block';
+        setImage(data.secure_url);
         statusEl.textContent = "Photo upload ho gayi!";
         statusEl.className = "status ok";
-      } else {
-        throw new Error(data.error?.message || "Upload failed");
-      }
+      } else { throw new Error(data.error?.message || "Upload failed"); }
     } catch(err){
       statusEl.textContent = "Upload me error: " + err.message;
       statusEl.className = "status err";
     }
   });
 
-  // ---- Add question to list ----
+  // ---- Question form ----
+  function resetForm(){
+    $('qTopic').value = '';
+    $('qText').value = '';
+    [0,1,2,3].forEach(i=>$('opt'+i).value = '');
+    document.querySelector('input[name=correct][value="0"]').checked = true;
+    $('qExplanation').value = '';
+    $('qImage').value = '';
+    $('uploadStatus').textContent = '';
+    setImage(null);
+    editIndex = null;
+    $('addBtn').textContent = 'Question List me Add karo';
+    $('cancelEditBtn').classList.add('hidden');
+  }
+  window.cancelEdit = function(){ resetForm(); $('qStatus').textContent = ''; }
+
   window.addQuestion = function(){
-    const topic = document.getElementById('qTopic').value.trim();
-    const text = document.getElementById('qText').value.trim();
-    const opts = [0,1,2,3].map(i=>document.getElementById('opt'+i).value.trim());
+    const topic = $('qTopic').value.trim();
+    const text = $('qText').value.trim();
+    const opts = [0,1,2,3].map(i=>$('opt'+i).value.trim());
     const correct = parseInt(document.querySelector('input[name=correct]:checked').value);
-    const explanation = document.getElementById('qExplanation').value.trim();
-    const statusEl = document.getElementById('qStatus');
+    const explanation = $('qExplanation').value.trim();
+    const statusEl = $('qStatus');
 
     if(!topic || !text || opts.some(o=>!o)){
       statusEl.textContent = "Topic, question text aur sabhi 4 options bharo.";
       statusEl.className = "status err";
       return;
     }
-
-    questions.push({
-      topic, text, options: opts, correct, explanation,
-      image: uploadedImageUrl || null
-    });
-
-    // reset form
-    document.getElementById('qTopic').value = '';
-    document.getElementById('qText').value = '';
-    [0,1,2,3].forEach(i=>document.getElementById('opt'+i).value = '');
-    document.getElementById('qExplanation').value = '';
-    document.getElementById('qImage').value = '';
-    document.getElementById('imgPreview').style.display = 'none';
-    document.getElementById('uploadStatus').textContent = '';
-    uploadedImageUrl = null;
-    statusEl.textContent = "Question add ho gaya!";
+    const q = { topic, text, options: opts, correct, explanation, image: uploadedImageUrl || null };
+    const wasEdit = editIndex !== null;
+    if(wasEdit){ questions[editIndex] = q; } else { questions.push(q); }
+    resetForm();
+    statusEl.textContent = wasEdit ? "Question update ho gaya! (Test me save karna mat bhoolna)" : "Question add ho gaya!";
     statusEl.className = "status ok";
+    renderQList();
+  }
 
+  window.editQuestion = function(idx){
+    const q = questions[idx];
+    editIndex = idx;
+    $('qTopic').value = q.topic || '';
+    $('qText').value = q.text || '';
+    [0,1,2,3].forEach(i=>$('opt'+i).value = (q.options && q.options[i]) || '');
+    const r = document.querySelector('input[name=correct][value="'+(q.correct||0)+'"]');
+    if(r) r.checked = true;
+    $('qExplanation').value = q.explanation || '';
+    $('qImage').value = '';
+    $('uploadStatus').textContent = '';
+    setImage(q.image);
+    $('addBtn').textContent = 'Question #' + (idx+1) + ' Update karo';
+    $('cancelEditBtn').classList.remove('hidden');
+    $('qStatus').textContent = 'Question #' + (idx+1) + ' edit ho raha hai.';
+    $('qStatus').className = 'status';
+    $('qTopic').scrollIntoView({behavior:'smooth', block:'center'});
+  }
+
+  window.removeQuestion = function(idx){
+    if(!confirm('Question #' + (idx+1) + ' hataana hai?')) return;
+    questions.splice(idx,1);
+    if(editIndex !== null) resetForm();
     renderQList();
   }
 
   function renderQList(){
-    const el = document.getElementById('qList');
-    document.getElementById('qCount').textContent = questions.length + " added";
+    const el = $('qList');
+    $('qCount').textContent = questions.length + " added";
+    el.innerHTML = '';
     if(questions.length === 0){
-      el.innerHTML = '<div class="sub">Abhi koi question add nahi hua.</div>';
+      const d = document.createElement('div'); d.className='sub'; d.textContent='Abhi koi question add nahi hua.';
+      el.appendChild(d);
       return;
     }
-    el.innerHTML = '';
     questions.forEach((q, idx)=>{
       const div = document.createElement('div');
       div.className = 'qitem';
-      div.innerHTML = `
-        <div class="qtext">
-          <div>${idx+1}. ${q.text.slice(0,90)}${q.text.length>90?'...':''}</div>
-          <div class="qtopic">${q.topic}${q.image ? ' • 📷' : ''}</div>
-        </div>
-        <button class="danger" onclick="removeQuestion(${idx})">Remove</button>
-      `;
+      const left = document.createElement('div'); left.className = 'qtext';
+      const t1 = document.createElement('div');
+      t1.textContent = (idx+1) + '. ' + q.text.slice(0,90) + (q.text.length>90 ? '...' : '');
+      const t2 = document.createElement('div'); t2.className = 'qtopic';
+      t2.textContent = q.topic + (q.image ? ' • 📷' : '');
+      left.append(t1,t2);
+      const btns = document.createElement('div'); btns.style.display='flex'; btns.style.gap='6px';
+      const e = document.createElement('button'); e.textContent='Edit'; e.onclick=()=>editQuestion(idx);
+      const r = document.createElement('button'); r.className='danger'; r.textContent='Remove'; r.onclick=()=>removeQuestion(idx);
+      btns.append(e,r);
+      div.append(left,btns);
       el.appendChild(div);
     });
   }
 
-  window.removeQuestion = function(idx){
-    questions.splice(idx,1);
-    renderQList();
+  // ---- Load existing test for editing ----
+  async function loadForEdit(){
+    $('pageTitle').textContent = 'Edit Test';
+    $('pageSub').textContent = 'Test load ho raha hai...';
+    $('publishBtn').textContent = 'Changes Save Karo';
+    try{
+      const snap = await getDoc(doc(db, 'tests', editId));
+      if(!snap.exists()){ $('pageSub').textContent = 'Ye test nahi mila (shayad delete ho chuka hai).'; return; }
+      const d = snap.data();
+      $('seriesName').value = d.series || '';
+      $('testTitle').value = d.title || '';
+      $('marksCorrect').value = d.marksCorrect ?? 4;
+      $('marksWrong').value = d.marksWrong ?? 1;
+      $('timerMin').value = d.timerMin ?? 60;
+      $('remarksBox').innerHTML = '';
+      (d.remarks || []).forEach(r => addRemarkRow(r.min, r.max, r.text));
+      questions = d.questions || [];
+      renderQList();
+      $('pageSub').textContent = 'Editing: ' + (d.title || '') + ' — badlav karo aur neeche "Changes Save Karo" dabao';
+    } catch(err){
+      $('pageSub').textContent = 'Load me error: ' + err.message;
+    }
   }
 
-  // ---- Publish ----
+  // ---- Publish / Save ----
   window.publishTest = async function(){
-    const series = document.getElementById('seriesName').value.trim();
-    const title = document.getElementById('testTitle').value.trim();
-    const marksCorrect = parseFloat(document.getElementById('marksCorrect').value) || 0;
-    const marksWrong = parseFloat(document.getElementById('marksWrong').value) || 0;
-    const timerMin = parseInt(document.getElementById('timerMin').value) || 60;
-    const statusEl = document.getElementById('publishStatus');
+    const series = $('seriesName').value.trim();
+    const title = $('testTitle').value.trim();
+    const marksCorrect = parseFloat($('marksCorrect').value) || 0;
+    const marksWrong = parseFloat($('marksWrong').value) || 0;
+    const timerMin = parseInt($('timerMin').value) || 60;
+    const statusEl = $('publishStatus');
 
     const remarks = [...document.querySelectorAll('.remark-row')].map(row=>({
       min: parseFloat(row.querySelector('.rmin').value) || 0,
@@ -336,20 +395,28 @@
       return;
     }
 
-    statusEl.textContent = "Publish ho raha hai...";
+    statusEl.textContent = editId ? "Save ho raha hai..." : "Publish ho raha hai...";
     statusEl.className = "status";
 
     try {
-      await addDoc(collection(db, "tests"), {
-        series, title, marksCorrect, marksWrong, timerMin,
-        remarks, questions,
-        createdAt: serverTimestamp()
-      });
-      statusEl.textContent = "Test successfully publish ho gaya! Home page par jaake dekho.";
+      if(editId){
+        await updateDoc(doc(db, 'tests', editId), {
+          series, title, marksCorrect, marksWrong, timerMin, remarks, questions,
+          updatedAt: serverTimestamp()
+        });
+        statusEl.textContent = "Changes save ho gaye! Ab students ko naya version dikhega.";
+      } else {
+        await addDoc(collection(db, "tests"), {
+          series, title, marksCorrect, marksWrong, timerMin,
+          remarks, questions,
+          createdAt: serverTimestamp()
+        });
+        statusEl.textContent = "Test successfully publish ho gaya! Home page par jaake dekho.";
+        questions = [];
+        renderQList();
+        $('testTitle').value = '';
+      }
       statusEl.className = "status ok";
-      questions = [];
-      renderQList();
-      document.getElementById('testTitle').value = '';
     } catch(err){
       statusEl.textContent = "Error: " + err.message;
       statusEl.className = "status err";
