@@ -3,55 +3,60 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>My Results - NEET Practice Tests</title>
+<title>My Results — NEET Practice Tests</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="student-styles.css">
 <style>
-  :root{
-    --bg:#0f1720; --panel:#16212c; --panel-2:#1c2a37;
-    --accent:#3ddc84; --danger:#ff6b5e;
-    --text:#eef3f6; --text-dim:#9fb0bc; --border:#26343f;
-  }
-  *{box-sizing:border-box;}
-  body{margin:0;background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;min-height:100vh;}
-  h1,h2,h3{font-family:'Space Grotesk',sans-serif;}
-  .wrap{max-width:760px;margin:0 auto;padding:30px 18px 60px;}
-  .topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;flex-wrap:wrap;gap:10px;}
-  .topbar a{color:var(--accent);text-decoration:none;font-weight:600;font-size:.9rem;}
-  .topbar button{background:none;border:1px solid var(--border);color:var(--text-dim);border-radius:8px;padding:6px 12px;cursor:pointer;font-family:'Inter',sans-serif;font-size:.82rem;}
-  h1{font-size:1.6rem;margin:0 0 4px;}
-  .sub{color:var(--text-dim);font-size:.9rem;margin-bottom:22px;}
+  .page-head{padding:32px 0 6px;}
+  .page-head h1{font-size:1.7rem;margin:0 0 4px;}
+  .page-head p{color:var(--ink-dim);margin:0 0 22px;}
   .stats{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:22px;}
-  .stat{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:12px 18px;flex:1;min-width:120px;}
-  .stat .n{font-family:'Space Grotesk',sans-serif;font-size:1.4rem;color:var(--accent);}
-  .stat .l{font-size:.75rem;color:var(--text-dim);}
-  .attempt{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:20px 22px;margin-bottom:14px;}
+  .stat{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px 18px;flex:1;min-width:130px;}
+  .stat .n{font-family:'Fraunces',serif;font-size:1.5rem;color:var(--primary);}
+  .stat .l{font-size:.76rem;color:var(--ink-dim);}
+  .attempt{background:var(--surface);border:1px solid var(--line);border-left:4px solid var(--primary);border-radius:10px;padding:18px 20px;margin-bottom:12px;}
   .attempt .head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;}
-  .attempt h3{margin:0 0 4px;font-size:1.02rem;}
-  .attempt .date{color:var(--text-dim);font-size:.78rem;}
-  .attempt .score{font-family:'Space Grotesk',sans-serif;font-size:1.5rem;color:var(--accent);text-align:right;}
-  .attempt .score small{display:block;font-size:.72rem;color:var(--text-dim);font-family:'Inter',sans-serif;}
-  .counts{display:flex;gap:16px;margin:12px 0;font-size:.82rem;color:var(--text-dim);}
-  .counts b{color:var(--text);}
-  .tags{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px;align-items:center;font-size:.78rem;color:var(--text-dim);}
-  .tag{padding:3px 10px;border-radius:20px;border:1px solid var(--border);font-size:.76rem;}
+  .attempt h3{margin:0 0 4px;font-size:1rem;font-family:'Inter',sans-serif;font-weight:600;}
+  .attempt .date{color:var(--ink-dim);font-size:.78rem;}
+  .attempt .score{font-family:'Fraunces',serif;font-size:1.4rem;color:var(--accent-dark);text-align:right;}
+  .attempt .score small{display:block;font-size:.72rem;color:var(--ink-dim);font-family:'Inter',sans-serif;font-weight:400;}
+  .counts{display:flex;gap:16px;margin:12px 0;font-size:.82rem;color:var(--ink-dim);}
+  .counts b{color:var(--ink);}
+  .tags{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;align-items:center;font-size:.78rem;color:var(--ink-dim);}
+  .tag{padding:3px 10px;border-radius:20px;border:1px solid var(--line);font-size:.76rem;}
   .tag.weak{border-color:var(--danger);color:var(--danger);}
-  .tag.strong{border-color:var(--accent);color:var(--accent);}
-  .empty{color:var(--text-dim);text-align:center;padding:40px 0;}
-  .empty a{color:var(--accent);}
+  .tag.strong{border-color:var(--accent);color:var(--accent-dark);}
 </style>
 </head>
 <body>
-<div class="wrap">
-  <div class="topbar">
-    <a href="index.html">&larr; Home</a>
-    <div><span id="who" style="color:var(--text-dim);font-size:.85rem;margin-right:10px;"></span><button id="logoutBtn">Logout</button></div>
-  </div>
-  <h1>My Results</h1>
-  <div class="sub">Your attempted tests, scores and topic-wise analysis</div>
 
-  <div class="stats hidden" id="stats" style="display:none;">
+<header class="site-header">
+  <div class="shell nav">
+    <a class="brand" href="index.html">
+      <svg width="34" height="34" viewBox="0 0 34 34" fill="none">
+        <defs><linearGradient id="lg1" x1="0" y1="0" x2="34" y2="34">
+          <stop offset="0" stop-color="#24398B"/><stop offset="1" stop-color="#0F9D82"/>
+        </linearGradient></defs>
+        <rect width="34" height="34" rx="10" fill="url(#lg1)"/>
+        <rect x="15" y="8" width="4" height="18" rx="2" fill="white"/>
+        <rect x="8" y="15" width="18" height="4" rx="2" fill="white"/>
+      </svg>
+      <span class="brand-word">NEET Practice Tests</span>
+    </a>
+    <nav class="nav-links"><a href="index.html">Mock Tests</a><a href="about.html">About Us</a></nav>
+    <div class="nav-auth" id="authBar"></div>
+  </div>
+</header>
+
+<div class="shell narrow">
+  <div class="page-head">
+    <h1>My Results</h1>
+    <p>Your attempted tests, scores and topic-wise analysis</p>
+  </div>
+
+  <div class="stats" id="stats" style="display:none;">
     <div class="stat"><div class="n" id="sTests">0</div><div class="l">Tests attempted</div></div>
     <div class="stat"><div class="n" id="sBest">0</div><div class="l">Best score</div></div>
     <div class="stat"><div class="n" id="sAvg">0</div><div class="l">Average score</div></div>
@@ -60,11 +65,16 @@
   <div id="list"><div class="empty">Loading your results...</div></div>
 </div>
 
+<footer class="site-footer">
+  <div class="shell"><span>&copy; <span id="yr"></span> NEET Practice Tests</span><a href="index.html">Mock Tests</a></div>
+</footer>
+
 <script type="module">
   import { db } from './firebase-config.js';
   import { collection, getDocs, query, where } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
   import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
+  document.getElementById('yr').textContent = new Date().getFullYear();
   const DOMAIN = "@students.neetplatform.app";
   const auth = getAuth();
   const $ = id => document.getElementById(id);
@@ -77,21 +87,22 @@
     return e;
   }
 
-  $('logoutBtn').onclick = async () => { await signOut(auth); location.href = 'index.html'; };
-
   onAuthStateChanged(auth, u => {
-    if(!(u && u.email && u.email.endsWith(DOMAIN))){
+    const authBar = $('authBar');
+    authBar.innerHTML = '';
+    if(u && u.email && u.email.endsWith(DOMAIN)){
+      authBar.appendChild(mk('span', 'Hi, ' + (u.displayName || 'Student')));
+      const b = mk('button', 'Logout'); b.onclick = async () => { await signOut(auth); location.href='index.html'; };
+      authBar.appendChild(b);
+      if(!loadStarted){ loadStarted = true; load(u); }
+    } else {
       location.replace('login.html?next=history.html');
-      return;
     }
-    $('who').textContent = u.displayName || 'Student';
-    if(!loadStarted){ loadStarted = true; load(u); }
   });
 
   async function load(u){
     const list = $('list');
     try{
-      // Only this student's own attempts (security rules enforce this too)
       const snap = await getDocs(query(collection(db, "attempts"), where("uid", "==", u.uid)));
       const rows = snap.docs.map(d => d.data());
       rows.sort((a,b) => (b.submittedAt ? b.submittedAt.toMillis() : 0) - (a.submittedAt ? a.submittedAt.toMillis() : 0));
@@ -100,7 +111,7 @@
       if(!rows.length){
         const e = mk('div', null, 'empty');
         e.appendChild(document.createTextNode("You haven't attempted any test yet. "));
-        const a = mk('a', 'Start a test'); a.href = 'index.html';
+        const a = mk('a', 'Start a test'); a.href = 'index.html'; a.style.color='var(--accent-dark)';
         e.appendChild(a);
         list.appendChild(e);
         return;
