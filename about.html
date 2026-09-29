@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>About Us — NEET Practice Tests</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="student-styles.css">
+<style>
+  .about-hero{padding:48px 0 8px;}
+  .about-hero h1{font-size:2rem;margin:0 0 10px;}
+  .about-hero p{color:var(--ink-dim);max-width:60ch;}
+  .about-section{padding:28px 0;border-top:1px solid var(--line);}
+  .about-section h2{font-size:1.3rem;margin:0 0 12px;}
+  .about-section p{color:var(--ink-dim);max-width:66ch;}
+  .offer-list{list-style:none;padding:0;margin:0;display:grid;gap:12px;}
+  .offer-list li{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px 16px;color:var(--ink-dim);font-size:.92rem;}
+  .offer-list li b{color:var(--ink);}
+  .credit{color:var(--ink-dim);font-size:.92rem;}
+  .credit b{color:var(--ink);}
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="shell nav">
+    <a class="brand" href="index.html">
+      <svg width="34" height="34" viewBox="0 0 34 34" fill="none">
+        <defs><linearGradient id="lg1" x1="0" y1="0" x2="34" y2="34">
+          <stop offset="0" stop-color="#24398B"/><stop offset="1" stop-color="#0F9D82"/>
+        </linearGradient></defs>
+        <rect width="34" height="34" rx="10" fill="url(#lg1)"/>
+        <rect x="15" y="8" width="4" height="18" rx="2" fill="white"/>
+        <rect x="8" y="15" width="18" height="4" rx="2" fill="white"/>
+      </svg>
+      <span class="brand-word">NEET Practice Tests</span>
+    </a>
+    <nav class="nav-links">
+      <a href="index.html">Mock Tests</a>
+      <a href="about.html">About Us</a>
+    </nav>
+    <div class="nav-auth" id="authBar"></div>
+  </div>
+</header>
+
+<div class="shell narrow about-hero">
+  <h1>About us</h1>
+  <p>NEET Practice Tests is built for one reason: NEET aspirants deserve exam-accurate practice, regardless of what they can afford.</p>
+</div>
+
+<div class="shell narrow">
+  <section class="about-section">
+    <h2>Our goal</h2>
+    <p>Our target is simple — to provide the most affordable, accessible NEET preparation to every student, no matter their background. Practice tests in the real exam format should never be out of reach because of cost.</p>
+  </section>
+
+  <section class="about-section">
+    <h2>What we offer</h2>
+    <ul class="offer-list">
+      <li><b>Chapter-wise &amp; full-length mock tests</b> in the real NEET CBT format — same layout, timer and question palette as the actual exam.</li>
+      <li><b>Instant scoring</b> with the real NEET marking scheme, including negative marking.</li>
+      <li><b>Topic-wise analysis</b> after every attempt, so you know exactly which chapters need more work.</li>
+      <li><b>Your full test history</b> saved to your account, so you can track your progress over time.</li>
+    </ul>
+  </section>
+
+  <section class="about-section">
+    <h2>Who's behind this</h2>
+    <p class="credit">Designed and managed by <b>Raman Kaswan</b>.</p>
+  </section>
+</div>
+
+<footer class="site-footer">
+  <div class="shell">
+    <span>&copy; <span id="yr"></span> NEET Practice Tests</span>
+    <a href="index.html">Mock Tests</a>
+  </div>
+</footer>
+
+<script type="module">
+  import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+  import './firebase-config.js';
+
+  document.getElementById('yr').textContent = new Date().getFullYear();
+  const DOMAIN = "@students.neetplatform.app";
+  const auth = getAuth();
+  const authBar = document.getElementById('authBar');
+
+  function mk(tag, text, attrs){
+    const e = document.createElement(tag);
+    if(text != null) e.textContent = text;
+    if(attrs) Object.entries(attrs).forEach(([k,v]) => e.setAttribute(k, v));
+    return e;
+  }
+
+  onAuthStateChanged(auth, u => {
+    authBar.innerHTML = '';
+    if(u && u.email && u.email.endsWith(DOMAIN)){
+      authBar.appendChild(mk('span', 'Hi, ' + (u.displayName || 'Student')));
+      authBar.appendChild(mk('a', 'My Results', {href:'history.html'}));
+      const b = mk('button', 'Logout');
+      b.onclick = () => signOut(auth);
+      authBar.appendChild(b);
+    } else {
+      authBar.appendChild(mk('a', 'Login / Register', {href:'login.html?next=about.html'}));
+    }
+  });
+</script>
+</body>
+</html>
