@@ -7,6 +7,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 <style>
   :root{
     --bg:#0f1720; --panel:#16212c; --panel-2:#1c2a37;
@@ -121,9 +123,53 @@
     <button onclick="addRemarkRow()">+ Remark add karo</button>
   </div>
 
+  <!-- BULK IMPORT -->
+  <div class="card">
+    <h2>3. Bulk Import — ek saath kai questions daalo</h2>
+    <p class="sub" style="margin:-6px 0 14px;">Neeche wale format me type/paste karo (Word/Notepad me likh ke yahan paste kar sakte ho), phir "Sabko List me Add Karo" dabao. Photo baad me har question <b>Edit</b> karke add karni hogi.</p>
+
+    <button type="button" onclick="fillTemplate()">Format ka Example Dikhao</button>
+
+    <label style="margin-top:14px;">Paste yahan</label>
+    <textarea id="bulkText" style="min-height:220px;font-family:monospace;font-size:.82rem;" placeholder="Q: ...&#10;A) ...&#10;B) ...&#10;C) ...&#10;D) ...&#10;ANSWER: B&#10;TOPIC: ...&#10;---"></textarea>
+
+    <div style="margin-top:12px;">
+      <button class="primary" onclick="bulkImport()">Sabko List me Add Karo</button>
+    </div>
+    <div class="status" id="bulkStatus" style="white-space:pre-wrap;"></div>
+
+    <hr style="border:none;border-top:1px solid var(--border);margin:24px 0;">
+
+    <h3 style="font-size:.95rem;margin:0 0 8px;">PDF se Auto-fill karo (Beta)</h3>
+    <p class="sub" style="margin:-4px 0 14px;">
+      Scanned/photo wali PDF ko upar wale format me automatically dalne ki koshish karega — equations, diagrams
+      aur tricky formatting kabhi galat bhi aa sakti hai, isliye "Add Karo" dabane se <b>pehle upar text check/theek
+      zaroor kar lena</b>. ANSWER aur TOPIC hamesha khud bharne honge. Bade papers (100+ questions) me kuch minute
+      lag sakte hain — dheeraj rakhna, page band mat karna.
+    </p>
+    <div class="row">
+      <div>
+        <label>PDF file</label>
+        <input type="file" id="pdfFile" accept="application/pdf">
+      </div>
+      <div>
+        <label>Question/Options kis taraf hain?</label>
+        <select id="pdfSide">
+          <option value="right">Right half (agar Hindi-English dono column me hai)</option>
+          <option value="left">Left half</option>
+          <option value="full">Poora page (single-language PDF)</option>
+        </select>
+      </div>
+    </div>
+    <div style="margin-top:10px;">
+      <button class="primary" id="pdfProcessBtn" onclick="processPdf()">PDF Process Karo</button>
+    </div>
+    <div class="status" id="pdfStatus" style="white-space:pre-wrap;"></div>
+  </div>
+
   <!-- ADD QUESTION -->
   <div class="card">
-    <h2>3. Question add karo <span class="count-badge" id="qCount">0 added</span></h2>
+    <h2>4. Question ek-ek karke add karo <span class="count-badge" id="qCount">0 added</span></h2>
     <label>Topic / Chapter</label>
     <input type="text" id="qTopic" placeholder="e.g. Physics - Current Electricity">
 
@@ -154,7 +200,7 @@
 
   <!-- QUESTION LIST -->
   <div class="card">
-    <h2>4. Test ke Questions (Edit / Remove yahan se)</h2>
+    <h2>5. Test ke Questions (Edit / Remove yahan se)</h2>
     <div class="qlist" id="qList"><div class="sub">Abhi koi question add nahi hua.</div></div>
   </div>
 
@@ -253,6 +299,233 @@
       statusEl.className = "status err";
     }
   });
+
+  // ---- Bulk import (paste format) ----
+  const TEMPLATE = `Q: A body of mass 6 kg moves under a force which causes a displacement s = (t^2/4) m. Find the work done by the force in the first 2 seconds.
+A) 12 J
+B) 9 J
+C) 6 J
+D) 3 J
+ANSWER: A
+TOPIC: Physics - Work Energy Power
+EXPLANATION: (optional, likh sakte ho ya khaali chhod sakte ho)
+---
+Q: The SI unit of electric current is -
+A) Volt
+B) Ohm
+C) Ampere
+D) Watt
+ANSWER: C
+TOPIC: Physics - Current Electricity
+---
+`;
+
+  window.fillTemplate = function(){
+    const box = $('bulkText');
+    box.value = box.value.trim() ? box.value + '\n\n' + TEMPLATE : TEMPLATE;
+  };
+
+  function parseBlock(blockText, num){
+    const lines = blockText.split('\n');
+    const markers = [];
+    const patterns = {
+      q:     /^Q\s*[:.]\s*(.*)$/i,
+      a:     /^A\s*\)\s*(.*)$/i,
+      b:     /^B\s*\)\s*(.*)$/i,
+      c:     /^C\s*\)\s*(.*)$/i,
+      d:     /^D\s*\)\s*(.*)$/i,
+      ans:   /^ANSWER\s*:\s*(.*)$/i,
+      topic: /^TOPIC\s*:\s*(.*)$/i,
+      exp:   /^EXPLANATION\s*:\s*(.*)$/i
+    };
+    lines.forEach((line, i) => {
+      const t = line.trim();
+      for(const key in patterns){
+        const m = t.match(patterns[key]);
+        if(m){ markers.push({key, idx:i, inline:m[1]}); return; }
+      }
+    });
+    const find = k => markers.find(m => m.key === k);
+    function between(startM, endIdx){
+      if(!startM) return '';
+      const parts = [startM.inline || ''];
+      for(let i = startM.idx + 1; i < endIdx; i++){
+        const l = lines[i].trim();
+        if(l) parts.push(l);
+      }
+      return parts.join(' ').trim();
+    }
+    const qM = find('q'), aM = find('a'), bM = find('b'), cM = find('c'), dM = find('d'), ansM = find('ans'), topicM = find('topic'), expM = find('exp');
+    if(!qM || !aM || !bM || !cM || !dM || !ansM){
+      return { error: `Question ${num}: Q/A)/B)/C)/D)/ANSWER me se kuch missing hai — format check karo.` };
+    }
+    const text = between(qM, aM.idx);
+    const optA = between(aM, bM.idx);
+    const optB = between(bM, cM.idx);
+    const optC = between(cM, dM.idx);
+    const optD = between(dM, ansM.idx);
+    const ansRaw = (ansM.inline || '').trim().toUpperCase().replace(/[^A-D1-4]/g, '');
+    const map = { A:0, B:1, C:2, D:3, '1':0, '2':1, '3':2, '4':3 };
+    const correct = map[ansRaw];
+    if(correct === undefined){
+      return { error: `Question ${num}: ANSWER "${ansM.inline}" samajh nahi aaya — A/B/C/D ya 1/2/3/4 likho.` };
+    }
+    if(!text || !optA || !optB || !optC || !optD){
+      return { error: `Question ${num}: question ya kisi option ka text khaali hai.` };
+    }
+    const topicEnd = expM ? expM.idx : lines.length;
+    const topic = topicM ? between(topicM, topicEnd) : '';
+    const explanation = expM ? between(expM, lines.length) : '';
+    if(!topic){
+      return { error: `Question ${num}: TOPIC likhna zaroori hai.` };
+    }
+    return { question: { topic, text, options: [optA, optB, optC, optD], correct, explanation: explanation || '', image: null } };
+  }
+
+  window.bulkImport = function(){
+    const raw = $('bulkText').value;
+    const statusEl = $('bulkStatus');
+    if(!raw.trim()){
+      statusEl.textContent = 'Pehle text paste karo.';
+      statusEl.className = 'status err';
+      return;
+    }
+    const blocks = raw.split(/\n\s*-{3,}\s*\n?/).map(b => b.trim()).filter(b => b);
+    let added = 0;
+    const errors = [];
+    blocks.forEach((b, i) => {
+      const r = parseBlock(b, i + 1);
+      if(r.error) errors.push(r.error);
+      else { questions.push(r.question); added++; }
+    });
+    renderQList();
+    let msg = added + ' question(s) list me add ho gaye.';
+    if(errors.length) msg += '\n\n' + errors.length + ' me dikkat thi, inhe theek karke dobara try karo:\n' + errors.join('\n');
+    statusEl.textContent = msg;
+    statusEl.className = 'status ' + (errors.length ? 'err' : 'ok');
+    if(added > 0) $('bulkText').value = '';
+  };
+
+  // ---- PDF auto-fill (best effort OCR) ----
+  if(window.pdfjsLib){
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js';
+  }
+
+  function cropCanvas(src, side){
+    if(side === 'full') return src;
+    const half = document.createElement('canvas');
+    half.width = src.width / 2;
+    half.height = src.height;
+    const ctx = half.getContext('2d');
+    const sx = side === 'right' ? src.width / 2 : 0;
+    ctx.drawImage(src, sx, 0, half.width, half.height, 0, 0, half.width, half.height);
+    return half;
+  }
+
+  function ocrTextToTemplate(raw){
+    const rawLines = raw.split('\n').map(l => l.trim()).filter(l => l);
+    const qStart = /^(\d{1,3})[.\)]\s*(.+)$/;
+    const optStart = /^\(?\s*([1-4]|[A-Da-d])\s*[.\)]\s*(.+)$/;
+
+    const blocks = [];
+    let cur = null; // {qLines:[], opts:[[],[],[],[]], optIdx:-1}
+
+    function pushCur(){
+      if(cur && (cur.qLines.join('').trim() || cur.opts.some(o => o.length))){
+        blocks.push(cur);
+      }
+    }
+    function startNew(text){
+      cur = { qLines: [text], opts: [[],[],[],[]], optIdx: -1 };
+    }
+
+    rawLines.forEach(line => {
+      const optM = line.match(optStart);
+      const qM = line.match(qStart);
+
+      if(optM && cur && cur.optIdx < 3){
+        cur.optIdx++;
+        cur.opts[cur.optIdx].push(optM[2]);
+        return;
+      }
+      if(qM && (!cur || cur.optIdx >= 3)){
+        pushCur();
+        startNew(qM[2]);
+        return;
+      }
+      if(!cur){
+        startNew(line);
+      } else if(cur.optIdx === -1){
+        cur.qLines.push(line);
+      } else {
+        cur.opts[cur.optIdx].push(line);
+      }
+    });
+    pushCur();
+
+    let out = '';
+    blocks.forEach(b => {
+      if(!b.qLines.join(' ').trim()) return;
+      out += 'Q: ' + b.qLines.join(' ').trim() + '\n';
+      out += 'A) ' + (b.opts[0].join(' ').trim() || '') + '\n';
+      out += 'B) ' + (b.opts[1].join(' ').trim() || '') + '\n';
+      out += 'C) ' + (b.opts[2].join(' ').trim() || '') + '\n';
+      out += 'D) ' + (b.opts[3].join(' ').trim() || '') + '\n';
+      out += 'ANSWER: \nTOPIC: \n---\n';
+    });
+    return out;
+  }
+
+  window.processPdf = async function(){
+    const fileInput = $('pdfFile');
+    const side = $('pdfSide').value;
+    const statusEl = $('pdfStatus');
+    const btn = $('pdfProcessBtn');
+    const file = fileInput.files[0];
+    if(!file){ statusEl.textContent = 'Pehle PDF file chuno.'; statusEl.className = 'status err'; return; }
+    if(!window.pdfjsLib || !window.Tesseract){
+      statusEl.textContent = 'OCR libraries load nahi hui. Internet check karke page refresh karo.';
+      statusEl.className = 'status err';
+      return;
+    }
+    btn.disabled = true;
+    statusEl.className = 'status';
+    statusEl.textContent = 'PDF khola ja raha hai...';
+
+    try{
+      const buf = await file.arrayBuffer();
+      const pdf = await pdfjsLib.getDocument({ data: buf }).promise;
+      const worker = await Tesseract.createWorker('eng');
+      let allText = '';
+
+      for(let i = 1; i <= pdf.numPages; i++){
+        statusEl.textContent = `Page ${i} of ${pdf.numPages} — OCR ho raha hai... (dheeraj rakho)`;
+        const page = await pdf.getPage(i);
+        const viewport = page.getViewport({ scale: 2 });
+        const canvas = document.createElement('canvas');
+        canvas.width = viewport.width;
+        canvas.height = viewport.height;
+        await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
+        const cropped = cropCanvas(canvas, side);
+        const { data: { text } } = await worker.recognize(cropped);
+        allText += text + '\n';
+      }
+      await worker.terminate();
+
+      const formatted = ocrTextToTemplate(allText);
+      const box = $('bulkText');
+      box.value = box.value.trim() ? box.value + '\n\n' + formatted : formatted;
+
+      statusEl.textContent = 'Ho gaya! Neeche "Paste yahan" box me text aa gaya hai — isse dhyan se check karo, ANSWER aur TOPIC bharo, phir "Sabko List me Add Karo" dabao.';
+      statusEl.className = 'status ok';
+      box.scrollIntoView({ behavior:'smooth', block:'center' });
+    } catch(err){
+      statusEl.textContent = 'Error: ' + err.message;
+      statusEl.className = 'status err';
+    } finally {
+      btn.disabled = false;
+    }
+  };
 
   // ---- Question form ----
   function resetForm(){
