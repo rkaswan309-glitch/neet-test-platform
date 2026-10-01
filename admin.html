@@ -54,6 +54,11 @@
   .status.ok{color:var(--accent);}
   .status.err{color:var(--danger);}
   .count-badge{background:var(--accent);color:#06251a;border-radius:20px;padding:2px 10px;font-size:.78rem;font-weight:700;}
+  .symgroup{display:flex;align-items:center;gap:4px;padding:4px 10px;background:var(--panel-2);border:1px solid var(--border);border-radius:8px;}
+  .symlbl{font-size:.72rem;color:var(--text-dim);margin-right:4px;}
+  .symbtn{padding:5px 9px;font-size:.9rem;background:var(--panel);border:1px solid var(--border);border-radius:6px;cursor:pointer;color:var(--text);}
+  .symbtn:hover{border-color:var(--accent);}
+  #powInsertBtn, #subInsertBtn{padding:5px 9px;font-size:.78rem;}
   .center-screen{min-height:80vh;display:flex;align-items:center;justify-content:center;}
   .logincard{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:34px 28px;max-width:360px;width:100%;text-align:center;}
   .logincard h2{margin:0 0 20px;font-size:1.3rem;font-family:'Space Grotesk',sans-serif;}
@@ -87,13 +92,65 @@
     <a href="students.html" style="color:var(--accent);text-decoration:none;font-weight:600;">Students Data</a>
   </div>
 
+  <!-- SYMBOL TOOLBAR -->
+  <div id="symToolbar" class="card" style="position:sticky;top:10px;z-index:40;padding:12px 16px;">
+    <div class="sub" style="margin:0 0 8px;">Jahan bhi type kar rahe ho (question, option, explanation — kahi bhi), bas symbol dabao, cursor pe aa jayega.</div>
+    <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;">
+      <div class="symgroup">
+        <span class="symlbl">Power</span>
+        <button type="button" class="symbtn" data-sym="²">x²</button>
+        <button type="button" class="symbtn" data-sym="³">x³</button>
+        <input type="text" id="powInput" placeholder="num" style="width:54px;padding:6px 8px;font-size:.8rem;">
+        <button type="button" id="powInsertBtn">Insert xⁿ</button>
+      </div>
+      <div class="symgroup">
+        <span class="symlbl">Subscript</span>
+        <button type="button" class="symbtn" data-sym="₂">x₂</button>
+        <button type="button" class="symbtn" data-sym="₃">x₃</button>
+        <input type="text" id="subInput" placeholder="num" style="width:54px;padding:6px 8px;font-size:.8rem;">
+        <button type="button" id="subInsertBtn">Insert xₙ</button>
+      </div>
+      <div class="symgroup">
+        <span class="symlbl">Common</span>
+        <button type="button" class="symbtn" data-sym="√">√</button>
+        <button type="button" class="symbtn" data-sym="±">±</button>
+        <button type="button" class="symbtn" data-sym="×">×</button>
+        <button type="button" class="symbtn" data-sym="÷">÷</button>
+        <button type="button" class="symbtn" data-sym="°">°</button>
+        <button type="button" class="symbtn" data-sym="∞">∞</button>
+        <button type="button" class="symbtn" data-sym="≤">≤</button>
+        <button type="button" class="symbtn" data-sym="≥">≥</button>
+        <button type="button" class="symbtn" data-sym="≠">≠</button>
+        <button type="button" class="symbtn" data-sym="→">→</button>
+        <button type="button" class="symbtn" data-sym="⇌">⇌</button>
+        <button type="button" class="symbtn" data-sym="∆">∆</button>
+        <button type="button" class="symbtn" data-sym="∫">∫</button>
+        <button type="button" class="symbtn" data-sym="∑">∑</button>
+      </div>
+      <div class="symgroup">
+        <span class="symlbl">Greek</span>
+        <button type="button" class="symbtn" data-sym="α">α</button>
+        <button type="button" class="symbtn" data-sym="β">β</button>
+        <button type="button" class="symbtn" data-sym="γ">γ</button>
+        <button type="button" class="symbtn" data-sym="θ">θ</button>
+        <button type="button" class="symbtn" data-sym="λ">λ</button>
+        <button type="button" class="symbtn" data-sym="μ">μ</button>
+        <button type="button" class="symbtn" data-sym="π">π</button>
+        <button type="button" class="symbtn" data-sym="σ">σ</button>
+        <button type="button" class="symbtn" data-sym="φ">φ</button>
+        <button type="button" class="symbtn" data-sym="Ω">Ω</button>
+      </div>
+    </div>
+  </div>
+
   <!-- TEST INFO -->
   <div class="card">
     <h2>1. Test ki jaankari</h2>
     <div class="row">
       <div>
         <label>Test Series (jaise "Weekly Test Series")</label>
-        <input type="text" id="seriesName" placeholder="e.g. Weekly Test Series">
+        <input type="text" id="seriesName" list="seriesList" placeholder="e.g. Weekly Test Series">
+        <datalist id="seriesList"></datalist>
       </div>
       <div>
         <label>Test ka naam</label>
@@ -113,6 +170,13 @@
         <label>Timer (minutes me)</label>
         <input type="number" id="timerMin" value="180">
       </div>
+      <div>
+        <label>Status</label>
+        <select id="testStatus">
+          <option value="live">Live (students abhi de sakte hain)</option>
+          <option value="comingsoon">Coming Soon (list me dikhega, abhi attempt nahi hoga)</option>
+        </select>
+      </div>
     </div>
   </div>
 
@@ -123,29 +187,14 @@
     <button onclick="addRemarkRow()">+ Remark add karo</button>
   </div>
 
-  <!-- BULK IMPORT -->
+  <!-- PDF IMPORT -->
   <div class="card">
-    <h2>3. Bulk Import — ek saath kai questions daalo</h2>
-    <p class="sub" style="margin:-6px 0 14px;">Neeche wale format me type/paste karo (Word/Notepad me likh ke yahan paste kar sakte ho), phir "Sabko List me Add Karo" dabao. Photo baad me har question <b>Edit</b> karke add karni hogi.</p>
-
-    <button type="button" onclick="fillTemplate()">Format ka Example Dikhao</button>
-
-    <label style="margin-top:14px;">Paste yahan</label>
-    <textarea id="bulkText" style="min-height:220px;font-family:monospace;font-size:.82rem;" placeholder="Q: ...&#10;A) ...&#10;B) ...&#10;C) ...&#10;D) ...&#10;ANSWER: B&#10;TOPIC: ...&#10;---"></textarea>
-
-    <div style="margin-top:12px;">
-      <button class="primary" onclick="bulkImport()">Sabko List me Add Karo</button>
-    </div>
-    <div class="status" id="bulkStatus" style="white-space:pre-wrap;"></div>
-
-    <hr style="border:none;border-top:1px solid var(--border);margin:24px 0;">
-
-    <h3 style="font-size:.95rem;margin:0 0 8px;">PDF se Auto-fill karo (Beta)</h3>
-    <p class="sub" style="margin:-4px 0 14px;">
-      Scanned/photo wali PDF ko upar wale format me automatically dalne ki koshish karega — equations, diagrams
-      aur tricky formatting kabhi galat bhi aa sakti hai, isliye "Add Karo" dabane se <b>pehle upar text check/theek
-      zaroor kar lena</b>. ANSWER aur TOPIC hamesha khud bharne honge. Bade papers (100+ questions) me kuch minute
-      lag sakte hain — dheeraj rakhna, page band mat karna.
+    <h2>3. PDF se Import (seedha questions ki list me)</h2>
+    <p class="sub" style="margin:-6px 0 14px;">
+      Question paper ki PDF upload karo — ye har page ko parallel me process karke questions seedha
+      "Test ke Questions" list me daal dega. <b>Answer hamesha "A" pe set hoga aur Topic khaali hoga</b> —
+      publish karne se pehle har question check karke sahi answer aur topic daalna zaroori hai
+      (list me seedha "Edit" dabake).
     </p>
     <div class="row">
       <div>
@@ -153,18 +202,23 @@
         <input type="file" id="pdfFile" accept="application/pdf">
       </div>
       <div>
-        <label>Question/Options kis taraf hain?</label>
+        <label>Questions/Options kis taraf hain?</label>
         <select id="pdfSide">
-          <option value="right">Right half (agar Hindi-English dono column me hai)</option>
+          <option value="right">Right half (Hindi-English dono column wali PDF)</option>
           <option value="left">Left half</option>
           <option value="full">Poora page (single-language PDF)</option>
         </select>
       </div>
     </div>
-    <div style="margin-top:10px;">
+    <div style="margin-top:10px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
       <button class="primary" id="pdfProcessBtn" onclick="processPdf()">PDF Process Karo</button>
+      <span class="sub" id="pdfProgress" style="margin:0;"></span>
     </div>
     <div class="status" id="pdfStatus" style="white-space:pre-wrap;"></div>
+    <details style="margin-top:12px;">
+      <summary style="cursor:pointer;color:var(--text-dim);font-size:.82rem;">Raw OCR text dekho (agar questions sahi se nahi bane)</summary>
+      <textarea id="rawOcrBox" readonly style="min-height:160px;font-family:monospace;font-size:.76rem;margin-top:8px;"></textarea>
+    </details>
   </div>
 
   <!-- ADD QUESTION -->
@@ -214,23 +268,80 @@
 
 <script type="module">
   import { db } from './firebase-config.js';
-  import { collection, addDoc, doc, getDoc, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+  import { collection, addDoc, doc, getDoc, getDocs, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
   import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
   const auth = getAuth();
   const $ = id => document.getElementById(id);
   const editId = new URLSearchParams(location.search).get('edit');
   let editLoaded = false;
+  let seriesLoaded = false;
 
   onAuthStateChanged(auth, (user)=>{
     if(user){
       $('loginScreen').classList.add('hidden');
       $('adminPanel').classList.remove('hidden');
+      if(!seriesLoaded){ seriesLoaded = true; loadSeriesList(); }
       if(editId && !editLoaded){ editLoaded = true; loadForEdit(); }
     } else {
       $('loginScreen').classList.remove('hidden');
       $('adminPanel').classList.add('hidden');
     }
+  });
+
+  async function loadSeriesList(){
+    try{
+      const snap = await getDocs(collection(db, "tests"));
+      const names = new Set();
+      snap.forEach(d => { const s = d.data().series; if(s) names.add(s); });
+      const dl = $('seriesList');
+      dl.innerHTML = '';
+      names.forEach(n => {
+        const opt = document.createElement('option');
+        opt.value = n;
+        dl.appendChild(opt);
+      });
+    } catch(err){ /* non-fatal, autocomplete just won't show */ }
+  }
+
+  // ---- Symbol toolbar: insert at cursor of whichever field was last focused ----
+  let activeField = null;
+  document.addEventListener('focusin', (e) => {
+    if(e.target.matches('input[type=text], input[type=number], textarea') && e.target.id !== 'powInput' && e.target.id !== 'subInput'){
+      activeField = e.target;
+    }
+  });
+
+  function insertAtCursor(field, text){
+    if(!field) return;
+    const start = field.selectionStart ?? field.value.length;
+    const end = field.selectionEnd ?? field.value.length;
+    field.value = field.value.slice(0, start) + text + field.value.slice(end);
+    const pos = start + text.length;
+    field.focus();
+    field.setSelectionRange(pos, pos);
+  }
+
+  document.querySelectorAll('.symbtn').forEach(btn => {
+    btn.addEventListener('click', () => insertAtCursor(activeField, btn.dataset.sym));
+  });
+
+  const SUP_MAP = {'0':'⁰','1':'¹','2':'²','3':'³','4':'⁴','5':'⁵','6':'⁶','7':'⁷','8':'⁸','9':'⁹','-':'⁻','+':'⁺'};
+  const SUB_MAP = {'0':'₀','1':'₁','2':'₂','3':'₃','4':'₄','5':'₅','6':'₆','7':'₇','8':'₈','9':'₉','-':'₋','+':'₊'};
+  function toMapped(str, map){
+    return [...str].map(ch => map[ch] || ch).join('');
+  }
+  $('powInsertBtn').addEventListener('click', () => {
+    const v = $('powInput').value.trim();
+    if(!v) return;
+    insertAtCursor(activeField, toMapped(v, SUP_MAP));
+    $('powInput').value = '';
+  });
+  $('subInsertBtn').addEventListener('click', () => {
+    const v = $('subInput').value.trim();
+    if(!v) return;
+    insertAtCursor(activeField, toMapped(v, SUB_MAP));
+    $('subInput').value = '';
   });
 
   window.doLogin = function(){
@@ -300,113 +411,7 @@
     }
   });
 
-  // ---- Bulk import (paste format) ----
-  const TEMPLATE = `Q: A body of mass 6 kg moves under a force which causes a displacement s = (t^2/4) m. Find the work done by the force in the first 2 seconds.
-A) 12 J
-B) 9 J
-C) 6 J
-D) 3 J
-ANSWER: A
-TOPIC: Physics - Work Energy Power
-EXPLANATION: (optional, likh sakte ho ya khaali chhod sakte ho)
----
-Q: The SI unit of electric current is -
-A) Volt
-B) Ohm
-C) Ampere
-D) Watt
-ANSWER: C
-TOPIC: Physics - Current Electricity
----
-`;
-
-  window.fillTemplate = function(){
-    const box = $('bulkText');
-    box.value = box.value.trim() ? box.value + '\n\n' + TEMPLATE : TEMPLATE;
-  };
-
-  function parseBlock(blockText, num){
-    const lines = blockText.split('\n');
-    const markers = [];
-    const patterns = {
-      q:     /^Q\s*[:.]\s*(.*)$/i,
-      a:     /^A\s*\)\s*(.*)$/i,
-      b:     /^B\s*\)\s*(.*)$/i,
-      c:     /^C\s*\)\s*(.*)$/i,
-      d:     /^D\s*\)\s*(.*)$/i,
-      ans:   /^ANSWER\s*:\s*(.*)$/i,
-      topic: /^TOPIC\s*:\s*(.*)$/i,
-      exp:   /^EXPLANATION\s*:\s*(.*)$/i
-    };
-    lines.forEach((line, i) => {
-      const t = line.trim();
-      for(const key in patterns){
-        const m = t.match(patterns[key]);
-        if(m){ markers.push({key, idx:i, inline:m[1]}); return; }
-      }
-    });
-    const find = k => markers.find(m => m.key === k);
-    function between(startM, endIdx){
-      if(!startM) return '';
-      const parts = [startM.inline || ''];
-      for(let i = startM.idx + 1; i < endIdx; i++){
-        const l = lines[i].trim();
-        if(l) parts.push(l);
-      }
-      return parts.join(' ').trim();
-    }
-    const qM = find('q'), aM = find('a'), bM = find('b'), cM = find('c'), dM = find('d'), ansM = find('ans'), topicM = find('topic'), expM = find('exp');
-    if(!qM || !aM || !bM || !cM || !dM || !ansM){
-      return { error: `Question ${num}: Q/A)/B)/C)/D)/ANSWER me se kuch missing hai — format check karo.` };
-    }
-    const text = between(qM, aM.idx);
-    const optA = between(aM, bM.idx);
-    const optB = between(bM, cM.idx);
-    const optC = between(cM, dM.idx);
-    const optD = between(dM, ansM.idx);
-    const ansRaw = (ansM.inline || '').trim().toUpperCase().replace(/[^A-D1-4]/g, '');
-    const map = { A:0, B:1, C:2, D:3, '1':0, '2':1, '3':2, '4':3 };
-    const correct = map[ansRaw];
-    if(correct === undefined){
-      return { error: `Question ${num}: ANSWER "${ansM.inline}" samajh nahi aaya — A/B/C/D ya 1/2/3/4 likho.` };
-    }
-    if(!text || !optA || !optB || !optC || !optD){
-      return { error: `Question ${num}: question ya kisi option ka text khaali hai.` };
-    }
-    const topicEnd = expM ? expM.idx : lines.length;
-    const topic = topicM ? between(topicM, topicEnd) : '';
-    const explanation = expM ? between(expM, lines.length) : '';
-    if(!topic){
-      return { error: `Question ${num}: TOPIC likhna zaroori hai.` };
-    }
-    return { question: { topic, text, options: [optA, optB, optC, optD], correct, explanation: explanation || '', image: null } };
-  }
-
-  window.bulkImport = function(){
-    const raw = $('bulkText').value;
-    const statusEl = $('bulkStatus');
-    if(!raw.trim()){
-      statusEl.textContent = 'Pehle text paste karo.';
-      statusEl.className = 'status err';
-      return;
-    }
-    const blocks = raw.split(/\n\s*-{3,}\s*\n?/).map(b => b.trim()).filter(b => b);
-    let added = 0;
-    const errors = [];
-    blocks.forEach((b, i) => {
-      const r = parseBlock(b, i + 1);
-      if(r.error) errors.push(r.error);
-      else { questions.push(r.question); added++; }
-    });
-    renderQList();
-    let msg = added + ' question(s) list me add ho gaye.';
-    if(errors.length) msg += '\n\n' + errors.length + ' me dikkat thi, inhe theek karke dobara try karo:\n' + errors.join('\n');
-    statusEl.textContent = msg;
-    statusEl.className = 'status ' + (errors.length ? 'err' : 'ok');
-    if(added > 0) $('bulkText').value = '';
-  };
-
-  // ---- PDF auto-fill (best effort OCR) ----
+  // ---- PDF Import (fast, parallel OCR -> straight into question list) ----
   if(window.pdfjsLib){
     pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js';
   }
@@ -422,28 +427,27 @@ TOPIC: Physics - Current Electricity
     return half;
   }
 
-  function ocrTextToTemplate(raw){
-    const rawLines = raw.split('\n').map(l => l.trim()).filter(l => l);
-    const qStart = /^(\d{1,3})[.\)]\s*(.+)$/;
-    const optStart = /^\(?\s*([1-4]|[A-Da-d])\s*[.\)]\s*(.+)$/;
+  // Very lenient line classifiers: tolerant of OCR noise (missing/extra spaces,
+  // ":" instead of ")", stray punctuation).
+  const Q_START = /^\(?\s*(\d{1,3})\s*[.\):]?\s*(.+)$/;
+  const OPT_START = /^\(?\s*([1-4]|[A-Da-d])\s*[.\):]?\s*(.+)$/;
 
+  function parseQuestionsFromText(raw){
+    const lines = raw.split('\n').map(l => l.trim()).filter(l => l.length > 0);
     const blocks = [];
     let cur = null; // {qLines:[], opts:[[],[],[],[]], optIdx:-1}
 
     function pushCur(){
-      if(cur && (cur.qLines.join('').trim() || cur.opts.some(o => o.length))){
+      if(cur && cur.qLines.join(' ').trim() && cur.opts.filter(o => o.length).length >= 2){
         blocks.push(cur);
       }
     }
-    function startNew(text){
-      cur = { qLines: [text], opts: [[],[],[],[]], optIdx: -1 };
-    }
+    function startNew(text){ cur = { qLines: [text], opts: [[],[],[],[]], optIdx: -1 }; }
 
-    rawLines.forEach(line => {
-      const optM = line.match(optStart);
-      const qM = line.match(qStart);
-
-      if(optM && cur && cur.optIdx < 3){
+    lines.forEach(line => {
+      const optM = line.match(OPT_START);
+      const qM = line.match(Q_START);
+      if(optM && cur && cur.qLines.length && cur.optIdx < 3){
         cur.optIdx++;
         cur.opts[cur.optIdx].push(optM[2]);
         return;
@@ -453,33 +457,27 @@ TOPIC: Physics - Current Electricity
         startNew(qM[2]);
         return;
       }
-      if(!cur){
-        startNew(line);
-      } else if(cur.optIdx === -1){
-        cur.qLines.push(line);
-      } else {
-        cur.opts[cur.optIdx].push(line);
-      }
+      if(!cur){ startNew(line); }
+      else if(cur.optIdx === -1){ cur.qLines.push(line); }
+      else { cur.opts[cur.optIdx].push(line); }
     });
     pushCur();
 
-    let out = '';
-    blocks.forEach(b => {
-      if(!b.qLines.join(' ').trim()) return;
-      out += 'Q: ' + b.qLines.join(' ').trim() + '\n';
-      out += 'A) ' + (b.opts[0].join(' ').trim() || '') + '\n';
-      out += 'B) ' + (b.opts[1].join(' ').trim() || '') + '\n';
-      out += 'C) ' + (b.opts[2].join(' ').trim() || '') + '\n';
-      out += 'D) ' + (b.opts[3].join(' ').trim() || '') + '\n';
-      out += 'ANSWER: \nTOPIC: \n---\n';
-    });
-    return out;
+    return blocks.map(b => ({
+      topic: '',
+      text: b.qLines.join(' ').trim(),
+      options: b.opts.map(o => o.join(' ').trim() || '(blank — theek karo)'),
+      correct: 0,
+      explanation: '',
+      image: null
+    }));
   }
 
   window.processPdf = async function(){
     const fileInput = $('pdfFile');
     const side = $('pdfSide').value;
     const statusEl = $('pdfStatus');
+    const progEl = $('pdfProgress');
     const btn = $('pdfProcessBtn');
     const file = fileInput.files[0];
     if(!file){ statusEl.textContent = 'Pehle PDF file chuno.'; statusEl.className = 'status err'; return; }
@@ -491,34 +489,66 @@ TOPIC: Physics - Current Electricity
     btn.disabled = true;
     statusEl.className = 'status';
     statusEl.textContent = 'PDF khola ja raha hai...';
+    progEl.textContent = '';
 
     try{
       const buf = await file.arrayBuffer();
       const pdf = await pdfjsLib.getDocument({ data: buf }).promise;
-      const worker = await Tesseract.createWorker('eng');
-      let allText = '';
+      const numPages = pdf.numPages;
 
-      for(let i = 1; i <= pdf.numPages; i++){
-        statusEl.textContent = `Page ${i} of ${pdf.numPages} — OCR ho raha hai... (dheeraj rakho)`;
+      // Render + crop every page to an image first (fast, main thread).
+      const pageImages = [];
+      for(let i = 1; i <= numPages; i++){
+        statusEl.textContent = `Page ${i} of ${numPages} taiyar ki ja rahi hai...`;
         const page = await pdf.getPage(i);
         const viewport = page.getViewport({ scale: 2 });
         const canvas = document.createElement('canvas');
         canvas.width = viewport.width;
         canvas.height = viewport.height;
         await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
-        const cropped = cropCanvas(canvas, side);
-        const { data: { text } } = await worker.recognize(cropped);
-        allText += text + '\n';
+        pageImages.push(cropCanvas(canvas, side));
       }
-      await worker.terminate();
 
-      const formatted = ocrTextToTemplate(allText);
-      const box = $('bulkText');
-      box.value = box.value.trim() ? box.value + '\n\n' + formatted : formatted;
+      // Pool of workers so pages OCR in parallel - this is what makes it fast.
+      const POOL_SIZE = Math.min(4, numPages);
+      statusEl.textContent = `${POOL_SIZE} OCR workers taiyar ho rahe hain...`;
+      const workers = await Promise.all(
+        Array.from({ length: POOL_SIZE }, () => Tesseract.createWorker('eng'))
+      );
 
-      statusEl.textContent = 'Ho gaya! Neeche "Paste yahan" box me text aa gaya hai — isse dhyan se check karo, ANSWER aur TOPIC bharo, phir "Sabko List me Add Karo" dabao.';
+      const pageTexts = new Array(numPages).fill('');
+      let done = 0;
+      function updateProgress(){
+        progEl.textContent = `${done} / ${numPages} pages OCR ho chuki hain`;
+      }
+      updateProgress();
+
+      async function runWorker(workerIdx){
+        for(let i = workerIdx; i < numPages; i += POOL_SIZE){
+          const { data: { text } } = await workers[workerIdx].recognize(pageImages[i]);
+          pageTexts[i] = text;
+          done++;
+          updateProgress();
+        }
+      }
+      statusEl.textContent = 'OCR chal raha hai (pages parallel me process ho rahe hain)...';
+      await Promise.all(workers.map((_, idx) => runWorker(idx)));
+      await Promise.all(workers.map(w => w.terminate()));
+
+      const fullText = pageTexts.join('\n');
+      $('rawOcrBox').value = fullText;
+
+      const parsed = parseQuestionsFromText(fullText);
+      if(parsed.length === 0){
+        statusEl.textContent = 'Koi question pehchana nahi gaya. Neeche "Raw OCR text dekho" khol kar check karo ki text sahi se aaya ya nahi — galat "side" (left/right/full) chuna ho sakta hai.';
+        statusEl.className = 'status err';
+        return;
+      }
+      questions.push(...parsed);
+      renderQList();
+      statusEl.textContent = `${parsed.length} questions list me add ho gaye (niche "Test ke Questions" me dekho). Har ek ka sahi ANSWER aur TOPIC "Edit" dabake daalna zaroori hai — abhi sabka answer "A" pe set hai, placeholder hai.`;
       statusEl.className = 'status ok';
-      box.scrollIntoView({ behavior:'smooth', block:'center' });
+      document.getElementById('qList').scrollIntoView({ behavior:'smooth', block:'center' });
     } catch(err){
       statusEl.textContent = 'Error: ' + err.message;
       statusEl.className = 'status err';
@@ -632,6 +662,7 @@ TOPIC: Physics - Current Electricity
       $('marksCorrect').value = d.marksCorrect ?? 4;
       $('marksWrong').value = d.marksWrong ?? 1;
       $('timerMin').value = d.timerMin ?? 60;
+      $('testStatus').value = d.status || 'live';
       $('remarksBox').innerHTML = '';
       (d.remarks || []).forEach(r => addRemarkRow(r.min, r.max, r.text));
       questions = d.questions || [];
@@ -649,6 +680,7 @@ TOPIC: Physics - Current Electricity
     const marksCorrect = parseFloat($('marksCorrect').value) || 0;
     const marksWrong = parseFloat($('marksWrong').value) || 0;
     const timerMin = parseInt($('timerMin').value) || 60;
+    const status = $('testStatus').value;
     const statusEl = $('publishStatus');
 
     const remarks = [...document.querySelectorAll('.remark-row')].map(row=>({
@@ -662,8 +694,8 @@ TOPIC: Physics - Current Electricity
       statusEl.className = "status err";
       return;
     }
-    if(questions.length === 0){
-      statusEl.textContent = "Kam se kam ek question add karo.";
+    if(questions.length === 0 && status === 'live'){
+      statusEl.textContent = "Kam se kam ek question add karo (ya 'Coming Soon' status select karo agar abhi sirf announce karna hai).";
       statusEl.className = "status err";
       return;
     }
@@ -674,13 +706,13 @@ TOPIC: Physics - Current Electricity
     try {
       if(editId){
         await updateDoc(doc(db, 'tests', editId), {
-          series, title, marksCorrect, marksWrong, timerMin, remarks, questions,
+          series, title, marksCorrect, marksWrong, timerMin, status, remarks, questions,
           updatedAt: serverTimestamp()
         });
         statusEl.textContent = "Changes save ho gaye! Ab students ko naya version dikhega.";
       } else {
         await addDoc(collection(db, "tests"), {
-          series, title, marksCorrect, marksWrong, timerMin,
+          series, title, marksCorrect, marksWrong, timerMin, status,
           remarks, questions,
           createdAt: serverTimestamp()
         });
@@ -688,6 +720,7 @@ TOPIC: Physics - Current Electricity
         questions = [];
         renderQList();
         $('testTitle').value = '';
+        loadSeriesList();
       }
       statusEl.className = "status ok";
     } catch(err){
