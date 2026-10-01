@@ -468,4 +468,233 @@ TOPIC: Physics - Current Electricity
       if(!b.qLines.join(' ').trim()) return;
       out += 'Q: ' + b.qLines.join(' ').trim() + '\n';
       out += 'A) ' + (b.opts[0].join(' ').trim() || '') + '\n';
-      out += 'B) ' + (b.opts[1].join(' ').trim() |
+      out += 'B) ' + (b.opts[1].join(' ').trim() || '') + '\n';
+      out += 'C) ' + (b.opts[2].join(' ').trim() || '') + '\n';
+      out += 'D) ' + (b.opts[3].join(' ').trim() || '') + '\n';
+      out += 'ANSWER: \nTOPIC: \n---\n';
+    });
+    return out;
+  }
+
+  window.processPdf = async function(){
+    const fileInput = $('pdfFile');
+    const side = $('pdfSide').value;
+    const statusEl = $('pdfStatus');
+    const btn = $('pdfProcessBtn');
+    const file = fileInput.files[0];
+    if(!file){ statusEl.textContent = 'Pehle PDF file chuno.'; statusEl.className = 'status err'; return; }
+    if(!window.pdfjsLib || !window.Tesseract){
+      statusEl.textContent = 'OCR libraries load nahi hui. Internet check karke page refresh karo.';
+      statusEl.className = 'status err';
+      return;
+    }
+    btn.disabled = true;
+    statusEl.className = 'status';
+    statusEl.textContent = 'PDF khola ja raha hai...';
+
+    try{
+      const buf = await file.arrayBuffer();
+      const pdf = await pdfjsLib.getDocument({ data: buf }).promise;
+      const worker = await Tesseract.createWorker('eng');
+      let allText = '';
+
+      for(let i = 1; i <= pdf.numPages; i++){
+        statusEl.textContent = `Page ${i} of ${pdf.numPages} — OCR ho raha hai... (dheeraj rakho)`;
+        const page = await pdf.getPage(i);
+        const viewport = page.getViewport({ scale: 2 });
+        const canvas = document.createElement('canvas');
+        canvas.width = viewport.width;
+        canvas.height = viewport.height;
+        await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
+        const cropped = cropCanvas(canvas, side);
+        const { data: { text } } = await worker.recognize(cropped);
+        allText += text + '\n';
+      }
+      await worker.terminate();
+
+      const formatted = ocrTextToTemplate(allText);
+      const box = $('bulkText');
+      box.value = box.value.trim() ? box.value + '\n\n' + formatted : formatted;
+
+      statusEl.textContent = 'Ho gaya! Neeche "Paste yahan" box me text aa gaya hai — isse dhyan se check karo, ANSWER aur TOPIC bharo, phir "Sabko List me Add Karo" dabao.';
+      statusEl.className = 'status ok';
+      box.scrollIntoView({ behavior:'smooth', block:'center' });
+    } catch(err){
+      statusEl.textContent = 'Error: ' + err.message;
+      statusEl.className = 'status err';
+    } finally {
+      btn.disabled = false;
+    }
+  };
+
+  // ---- Question form ----
+  function resetForm(){
+    $('qTopic').value = '';
+    $('qText').value = '';
+    [0,1,2,3].forEach(i=>$('opt'+i).value = '');
+    document.querySelector('input[name=correct][value="0"]').checked = true;
+    $('qExplanation').value = '';
+    $('qImage').value = '';
+    $('uploadStatus').textContent = '';
+    setImage(null);
+    editIndex = null;
+    $('addBtn').textContent = 'Question List me Add karo';
+    $('cancelEditBtn').classList.add('hidden');
+  }
+  window.cancelEdit = function(){ resetForm(); $('qStatus').textContent = ''; }
+
+  window.addQuestion = function(){
+    const topic = $('qTopic').value.trim();
+    const text = $('qText').value.trim();
+    const opts = [0,1,2,3].map(i=>$('opt'+i).value.trim());
+    const correct = parseInt(document.querySelector('input[name=correct]:checked').value);
+    const explanation = $('qExplanation').value.trim();
+    const statusEl = $('qStatus');
+
+    if(!topic || !text || opts.some(o=>!o)){
+      statusEl.textContent = "Topic, question text aur sabhi 4 options bharo.";
+      statusEl.className = "status err";
+      return;
+    }
+    const q = { topic, text, options: opts, correct, explanation, image: uploadedImageUrl || null };
+    const wasEdit = editIndex !== null;
+    if(wasEdit){ questions[editIndex] = q; } else { questions.push(q); }
+    resetForm();
+    statusEl.textContent = wasEdit ? "Question update ho gaya! (Test me save karna mat bhoolna)" : "Question add ho gaya!";
+    statusEl.className = "status ok";
+    renderQList();
+  }
+
+  window.editQuestion = function(idx){
+    const q = questions[idx];
+    editIndex = idx;
+    $('qTopic').value = q.topic || '';
+    $('qText').value = q.text || '';
+    [0,1,2,3].forEach(i=>$('opt'+i).value = (q.options && q.options[i]) || '');
+    const r = document.querySelector('input[name=correct][value="'+(q.correct||0)+'"]');
+    if(r) r.checked = true;
+    $('qExplanation').value = q.explanation || '';
+    $('qImage').value = '';
+    $('uploadStatus').textContent = '';
+    setImage(q.image);
+    $('addBtn').textContent = 'Question #' + (idx+1) + ' Update karo';
+    $('cancelEditBtn').classList.remove('hidden');
+    $('qStatus').textContent = 'Question #' + (idx+1) + ' edit ho raha hai.';
+    $('qStatus').className = 'status';
+    $('qTopic').scrollIntoView({behavior:'smooth', block:'center'});
+  }
+
+  window.removeQuestion = function(idx){
+    if(!confirm('Question #' + (idx+1) + ' hataana hai?')) return;
+    questions.splice(idx,1);
+    if(editIndex !== null) resetForm();
+    renderQList();
+  }
+
+  function renderQList(){
+    const el = $('qList');
+    $('qCount').textContent = questions.length + " added";
+    el.innerHTML = '';
+    if(questions.length === 0){
+      const d = document.createElement('div'); d.className='sub'; d.textContent='Abhi koi question add nahi hua.';
+      el.appendChild(d);
+      return;
+    }
+    questions.forEach((q, idx)=>{
+      const div = document.createElement('div');
+      div.className = 'qitem';
+      const left = document.createElement('div'); left.className = 'qtext';
+      const t1 = document.createElement('div');
+      t1.textContent = (idx+1) + '. ' + q.text.slice(0,90) + (q.text.length>90 ? '...' : '');
+      const t2 = document.createElement('div'); t2.className = 'qtopic';
+      t2.textContent = q.topic + (q.image ? ' • 📷' : '');
+      left.append(t1,t2);
+      const btns = document.createElement('div'); btns.style.display='flex'; btns.style.gap='6px';
+      const e = document.createElement('button'); e.textContent='Edit'; e.onclick=()=>editQuestion(idx);
+      const r = document.createElement('button'); r.className='danger'; r.textContent='Remove'; r.onclick=()=>removeQuestion(idx);
+      btns.append(e,r);
+      div.append(left,btns);
+      el.appendChild(div);
+    });
+  }
+
+  // ---- Load existing test for editing ----
+  async function loadForEdit(){
+    $('pageTitle').textContent = 'Edit Test';
+    $('pageSub').textContent = 'Test load ho raha hai...';
+    $('publishBtn').textContent = 'Changes Save Karo';
+    try{
+      const snap = await getDoc(doc(db, 'tests', editId));
+      if(!snap.exists()){ $('pageSub').textContent = 'Ye test nahi mila (shayad delete ho chuka hai).'; return; }
+      const d = snap.data();
+      $('seriesName').value = d.series || '';
+      $('testTitle').value = d.title || '';
+      $('marksCorrect').value = d.marksCorrect ?? 4;
+      $('marksWrong').value = d.marksWrong ?? 1;
+      $('timerMin').value = d.timerMin ?? 60;
+      $('remarksBox').innerHTML = '';
+      (d.remarks || []).forEach(r => addRemarkRow(r.min, r.max, r.text));
+      questions = d.questions || [];
+      renderQList();
+      $('pageSub').textContent = 'Editing: ' + (d.title || '') + ' — badlav karo aur neeche "Changes Save Karo" dabao';
+    } catch(err){
+      $('pageSub').textContent = 'Load me error: ' + err.message;
+    }
+  }
+
+  // ---- Publish / Save ----
+  window.publishTest = async function(){
+    const series = $('seriesName').value.trim();
+    const title = $('testTitle').value.trim();
+    const marksCorrect = parseFloat($('marksCorrect').value) || 0;
+    const marksWrong = parseFloat($('marksWrong').value) || 0;
+    const timerMin = parseInt($('timerMin').value) || 60;
+    const statusEl = $('publishStatus');
+
+    const remarks = [...document.querySelectorAll('.remark-row')].map(row=>({
+      min: parseFloat(row.querySelector('.rmin').value) || 0,
+      max: parseFloat(row.querySelector('.rmax').value) || 0,
+      text: row.querySelector('.rtext').value.trim()
+    })).filter(r=>r.text);
+
+    if(!series || !title){
+      statusEl.textContent = "Series aur test ka naam dono bharo.";
+      statusEl.className = "status err";
+      return;
+    }
+    if(questions.length === 0){
+      statusEl.textContent = "Kam se kam ek question add karo.";
+      statusEl.className = "status err";
+      return;
+    }
+
+    statusEl.textContent = editId ? "Save ho raha hai..." : "Publish ho raha hai...";
+    statusEl.className = "status";
+
+    try {
+      if(editId){
+        await updateDoc(doc(db, 'tests', editId), {
+          series, title, marksCorrect, marksWrong, timerMin, remarks, questions,
+          updatedAt: serverTimestamp()
+        });
+        statusEl.textContent = "Changes save ho gaye! Ab students ko naya version dikhega.";
+      } else {
+        await addDoc(collection(db, "tests"), {
+          series, title, marksCorrect, marksWrong, timerMin,
+          remarks, questions,
+          createdAt: serverTimestamp()
+        });
+        statusEl.textContent = "Test successfully publish ho gaya! Home page par jaake dekho.";
+        questions = [];
+        renderQList();
+        $('testTitle').value = '';
+      }
+      statusEl.className = "status ok";
+    } catch(err){
+      statusEl.textContent = "Error: " + err.message;
+      statusEl.className = "status err";
+    }
+  }
+</script>
+</body>
+</html>
