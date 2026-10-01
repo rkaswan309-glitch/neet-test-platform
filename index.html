@@ -159,15 +159,26 @@
           const card = mk('div', null, {class:'testcard'});
           const info = mk('div');
           info.appendChild(mk('h3', t.title));
+          const isComingSoon = t.status === 'comingsoon';
           const chips = mk('div', null, {class:'chips'});
-          chips.appendChild(mk('span', (t.questions ? t.questions.length : 0) + ' Questions', {class:'chip'}));
-          chips.appendChild(mk('span', (t.timerMin || 60) + ' min', {class:'chip'}));
-          chips.appendChild(mk('span', '+' + (t.marksCorrect ?? 4) + ' / -' + (t.marksWrong ?? 1), {class:'chip'}));
+          if(isComingSoon){
+            chips.appendChild(mk('span', 'Coming Soon', {class:'chip', style:'background:var(--gold-soft);color:var(--gold);border-color:var(--gold);font-weight:600;'}));
+          } else {
+            chips.appendChild(mk('span', (t.questions ? t.questions.length : 0) + ' Questions', {class:'chip'}));
+            chips.appendChild(mk('span', (t.timerMin || 60) + ' min', {class:'chip'}));
+            chips.appendChild(mk('span', '+' + (t.marksCorrect ?? 4) + ' / -' + (t.marksWrong ?? 1), {class:'chip'}));
+          }
           info.appendChild(chips);
           const att = myAttempts[t.id];
-          info.appendChild(mk('div', att ? ('Attempted — Best score: ' + att.score + ' / ' + att.maxScore) : 'Not attempted yet', {class: 'status-line' + (att ? ' done' : '')}));
+          if(!isComingSoon){
+            info.appendChild(mk('div', att ? ('Attempted — Best score: ' + att.score + ' / ' + att.maxScore) : 'Not attempted yet', {class: 'status-line' + (att ? ' done' : '')}));
+          }
           card.appendChild(info);
-          card.appendChild(mk('a', att ? 'Retake Test' : 'Start Test', {class:'btn btn-primary', href:'test.html?id=' + encodeURIComponent(t.id)}));
+          if(isComingSoon){
+            card.appendChild(mk('span', 'Coming Soon', {class:'btn btn-secondary', style:'opacity:.6;cursor:default;'}));
+          } else {
+            card.appendChild(mk('a', att ? 'Retake Test' : 'Start Test', {class:'btn btn-primary', href:'test.html?id=' + encodeURIComponent(t.id)}));
+          }
           block.appendChild(card);
         });
         content.appendChild(block);
