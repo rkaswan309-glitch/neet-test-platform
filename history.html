@@ -100,6 +100,23 @@
     }
   });
 
+  function renderTopicChart(container, topicStats){
+    const wrap = mk('div', null, 'chart-wrap');
+    Object.keys(topicStats).forEach(topic => {
+      const s = topicStats[topic];
+      const pct = Math.round((s.correct / s.total) * 100);
+      const cls = pct >= 70 ? 'strong' : (pct < 40 ? 'weak' : 'mid');
+      const col = mk('div', null, 'chart-col');
+      const val = mk('div', pct + '%', 'chart-val');
+      const bar = mk('div', null, 'chart-bar ' + cls); bar.style.height = '4px';
+      const label = mk('div', topic, 'chart-label');
+      col.appendChild(val); col.appendChild(bar); col.appendChild(label);
+      wrap.appendChild(col);
+      requestAnimationFrame(() => { bar.style.height = Math.max(pct, 3) + '%'; });
+    });
+    container.appendChild(wrap);
+  }
+
   async function load(u){
     const list = $('list');
     try{
@@ -141,20 +158,10 @@
         });
         card.appendChild(counts);
 
-        const weak = [], strong = [];
-        Object.entries(r.topicStats || {}).forEach(([topic, s]) => {
-          if(!s.total) return;
-          const pct = Math.round(s.correct / s.total * 100);
-          if(pct < 40) weak.push(topic + ' (' + pct + '%)');
-          else if(pct >= 70) strong.push(topic + ' (' + pct + '%)');
-        });
-        if(weak.length){
-          const row = mk('div', null, 'tags'); row.appendChild(mk('span', 'Weak:'));
-          weak.forEach(t => row.appendChild(mk('span', t, 'tag weak'))); card.appendChild(row);
-        }
-        if(strong.length){
-          const row = mk('div', null, 'tags'); row.appendChild(mk('span', 'Strong:'));
-          strong.forEach(t => row.appendChild(mk('span', t, 'tag strong'))); card.appendChild(row);
+        if(r.topicStats && Object.keys(r.topicStats).length){
+          const chartHolder = mk('div');
+          card.appendChild(chartHolder);
+          renderTopicChart(chartHolder, r.topicStats);
         }
         list.appendChild(card);
       });
