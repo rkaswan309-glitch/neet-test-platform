@@ -267,6 +267,24 @@
     }, 1000);
   }
 
+  function renderTopicChart(container, topicStats){
+    container.innerHTML = '';
+    const wrap = document.createElement('div'); wrap.className = 'chart-wrap';
+    Object.keys(topicStats).forEach(topic => {
+      const s = topicStats[topic];
+      const pct = Math.round((s.correct / s.total) * 100);
+      const cls = pct >= 70 ? 'strong' : (pct < 40 ? 'weak' : 'mid');
+      const col = document.createElement('div'); col.className = 'chart-col';
+      const val = document.createElement('div'); val.className = 'chart-val'; val.textContent = pct + '%';
+      const bar = document.createElement('div'); bar.className = 'chart-bar ' + cls; bar.style.height = '4px';
+      const label = document.createElement('div'); label.className = 'chart-label'; label.textContent = topic;
+      col.appendChild(val); col.appendChild(bar); col.appendChild(label);
+      wrap.appendChild(col);
+      requestAnimationFrame(() => { bar.style.height = Math.max(pct, 3) + '%'; });
+    });
+    container.appendChild(wrap);
+  }
+
   async function submitTest(){
     if(submitted) return;
     submitted = true;
@@ -300,21 +318,7 @@
     const matched = (testData.remarks || []).find(r => score >= r.min && score <= r.max);
     if(matched){ el('remarkBox').textContent = matched.text; } else { el('remarkBox').classList.add('hidden'); }
 
-    const list = el('topicList');
-    list.innerHTML = '';
-    Object.keys(topicStats).forEach(topic => {
-      const s = topicStats[topic];
-      const pct = Math.round((s.correct / s.total) * 100);
-      const cls = pct >= 70 ? 'strong' : (pct < 40 ? 'weak' : 'mid');
-      const row = document.createElement('div'); row.className = 'topicrow';
-      const n = document.createElement('span'); n.className = 'tname'; n.textContent = topic;
-      const bg = document.createElement('div'); bg.className = 'barbg';
-      const f = document.createElement('div'); f.className = 'barfill ' + cls; f.style.width = pct + '%';
-      bg.appendChild(f);
-      const p = document.createElement('span'); p.className = 'pct'; p.textContent = pct + '%';
-      row.appendChild(n); row.appendChild(bg); row.appendChild(p);
-      list.appendChild(row);
-    });
+    renderTopicChart(el('topicList'), topicStats);
 
     try{
       await addDoc(collection(db, "attempts"), {
